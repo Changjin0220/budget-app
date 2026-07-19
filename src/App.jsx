@@ -85,10 +85,10 @@ export default function App() {
       <div className="main">
         <header className="topbar">
           <button className="menu-btn" onClick={() => setMenuOpen(true)}><IconMenu size={20} /></button>
-          <div>
+          <div className="topbar-title">
             <h1>{active.label}</h1>
           </div>
-          <span className="crumb" style={{ marginLeft: 4 }}>· {active.crumb}</span>
+          <span className="crumb crumb-sub" style={{ marginLeft: 4 }}>· {active.crumb}</span>
           <div className="topbar-spacer" />
           <SyncBadge />
           <RemindersBell />

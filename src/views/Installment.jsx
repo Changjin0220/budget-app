@@ -21,6 +21,7 @@ export default function Installment() {
     d.installments[i] = { ...newInstallment(), id }
     showToast('행을 초기화했어요')
   })
+  const total = rows.reduce((a, r) => a + (Number(r.total) || 0), 0)
 
   return (
     <div className="grid">
@@ -35,25 +36,25 @@ export default function Installment() {
         </div>
 
         <div className="tbl-wrap">
-          <table className="tbl">
+          <table className="tbl compact">
             <thead>
               <tr>
-                <th className="c" style={{ minWidth: 60 }}>적용</th>
-                <th className="c" style={{ minWidth: 60 }}>완료</th>
-                <th style={{ minWidth: 116 }}>대분류</th>
-                <th style={{ minWidth: 116 }}>소분류</th>
-                <th className="r" style={{ minWidth: 116 }}>총금액</th>
-                <th style={{ minWidth: 116 }}>결제수단</th>
-                <th style={{ minWidth: 100 }}>시작(연.월)</th>
-                <th className="c" style={{ minWidth: 74 }}>상환일</th>
-                <th style={{ minWidth: 138 }}>휴일옵션</th>
-                <th className="c" style={{ minWidth: 74 }}>개월</th>
-                <th className="c" style={{ minWidth: 78 }}>연이율%</th>
-                <th className="c" style={{ minWidth: 96 }} title="부분 무이자 할부시 고객 부담 개월 수">무이자<br />제외개월</th>
-                <th style={{ minWidth: 150 }}>세부사항</th>
-                <th style={{ minWidth: 130 }}>비고</th>
-                <th style={{ minWidth: 130 }}>회차/월 상환액</th>
-                <th style={{ width: 80 }}></th>
+                <th className="c" style={{ minWidth: 44 }}>적용</th>
+                <th className="c" style={{ minWidth: 38 }}>완료</th>
+                <th style={{ minWidth: 84 }}>대분류</th>
+                <th style={{ minWidth: 84 }}>소분류</th>
+                <th className="r" style={{ minWidth: 84 }}>총금액</th>
+                <th style={{ minWidth: 84 }}>결제수단</th>
+                <th style={{ minWidth: 64 }}>시작(연.월)</th>
+                <th className="c" style={{ minWidth: 48 }}>상환일</th>
+                <th style={{ minWidth: 84 }}>휴일옵션</th>
+                <th className="c" style={{ minWidth: 44 }}>개월</th>
+                <th className="c" style={{ minWidth: 50 }}>연이율%</th>
+                <th className="c" style={{ minWidth: 64 }} title="부분 무이자 할부시 고객 부담 개월 수">무이자<br />제외개월</th>
+                <th style={{ minWidth: 100 }}>세부사항</th>
+                <th style={{ minWidth: 84 }}>비고</th>
+                <th style={{ minWidth: 90 }}>회차/월 상환액</th>
+                <th style={{ width: 48 }}></th>
               </tr>
             </thead>
             <tbody>
@@ -67,37 +68,46 @@ export default function Installment() {
                 return (
                   <tr key={it.id} style={it.apply ? undefined : { opacity: .5 }}>
                     <td className="c">
-                      <button className={`btn sm ${it.apply ? 'primary' : ''}`} style={{ padding: '4px 8px' }}
+                      <button className={`btn sm ${it.apply ? 'primary' : ''}`} style={{ padding: '3px 6px' }}
                         onClick={() => patch(i, 'apply', !it.apply)}>{it.apply ? '적용' : '해제'}</button>
                     </td>
-                    <td className="c"><input type="checkbox" checked={it.done} onChange={(e) => patch(i, 'done', e.target.checked)} style={{ width: 16, height: 16 }} /></td>
+                    <td className="c"><input type="checkbox" checked={it.done} onChange={(e) => patch(i, 'done', e.target.checked)} style={{ width: 15, height: 15 }} /></td>
                     <td><MajorSelect value={it.major} onChange={(v) => patch(i, 'major', v)} /></td>
                     <td><MinorSelect major={it.major} value={it.minor} onChange={(v) => patch(i, 'minor', v)} /></td>
                     <td><AmountInput value={it.total} onChange={(v) => patch(i, 'total', v)} /></td>
                     <td><PaymentSelect value={it.payment} onChange={(v) => patch(i, 'payment', v)} /></td>
                     <td><input className="input" placeholder="2026.1" value={it.startYM} onChange={(e) => patch(i, 'startYM', e.target.value)} /></td>
-                    <td className="c"><input className="input" style={{ width: 56, textAlign: 'center' }} type="number" min="1" max="31" value={it.payday} onChange={(e) => patch(i, 'payday', e.target.value)} /></td>
+                    <td className="c"><input className="input" style={{ width: 36, textAlign: 'center' }} type="number" min="1" max="31" value={it.payday} onChange={(e) => patch(i, 'payday', e.target.value)} /></td>
                     <td><HolidaySelect value={it.holiday} onChange={(v) => patch(i, 'holiday', v)} /></td>
-                    <td className="c"><input className="input" style={{ width: 56, textAlign: 'center' }} type="number" min="1" value={it.months} onChange={(e) => patch(i, 'months', e.target.value)} /></td>
-                    <td className="c"><input className="input" style={{ width: 62, textAlign: 'center' }} value={it.rate} onChange={(e) => patch(i, 'rate', e.target.value)} placeholder="0" /></td>
-                    <td className="c"><input className="input" style={{ width: 62, textAlign: 'center' }} type="number" min="0" value={it.partialFree} onChange={(e) => patch(i, 'partialFree', e.target.value)} placeholder="0" /></td>
+                    <td className="c"><input className="input" style={{ width: 36, textAlign: 'center' }} type="number" min="1" value={it.months} onChange={(e) => patch(i, 'months', e.target.value)} /></td>
+                    <td className="c"><input className="input" style={{ width: 40, textAlign: 'center' }} value={it.rate} onChange={(e) => patch(i, 'rate', e.target.value)} placeholder="0" /></td>
+                    <td className="c"><input className="input" style={{ width: 40, textAlign: 'center' }} type="number" min="0" value={it.partialFree} onChange={(e) => patch(i, 'partialFree', e.target.value)} placeholder="0" /></td>
                     <td><input className="input" value={it.detail} onChange={(e) => patch(i, 'detail', e.target.value)} placeholder="예: PT" /></td>
                     <td><input className="input" value={it.memo} onChange={(e) => patch(i, 'memo', e.target.value)} /></td>
-                    <td className="num" style={{ fontSize: 12 }}>
+                    <td className="num" style={{ fontSize: 11.5 }}>
                       {amounts.length
                         ? <><b>{it.months}회</b> · {won(per)}/회{occThisYear.length ? <div className="helper">{year}년 {occThisYear.length}회 반영</div> : <div className="helper">{year}년 해당 없음</div>}</>
                         : <span className="helper">개월·금액 입력</span>}
                     </td>
                     <td>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        <button className="btn ghost sm" onClick={() => reset(i)} title="행 초기화"><IconUndo size={14} /></button>
-                        <button className="btn ghost sm danger" onClick={() => remove(i)}><IconTrash size={14} /></button>
+                      <div style={{ display: 'flex', gap: 2 }}>
+                        <button className="btn ghost sm" style={{ padding: '3px 5px' }} onClick={() => reset(i)} title="행 초기화"><IconUndo size={13} /></button>
+                        <button className="btn ghost sm danger" style={{ padding: '3px 5px' }} onClick={() => remove(i)}><IconTrash size={13} /></button>
                       </div>
                     </td>
                   </tr>
                 )
               })}
             </tbody>
+            {rows.length > 0 && (
+              <tfoot>
+                <tr className="sec-total" style={{ background: 'var(--surface-2)' }}>
+                  <td colSpan={4} style={{ fontWeight: 800 }}>합계</td>
+                  <td className="r num" style={{ fontWeight: 900 }}>{won(total)}</td>
+                  <td colSpan={11}></td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </Card>

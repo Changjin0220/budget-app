@@ -3,6 +3,7 @@ import { Card } from '../components/ui'
 import { MajorSelect, MinorSelect, PaymentSelect, HolidaySelect, AmountInput, kindTag } from '../components/fields'
 import { kindOf } from '../data/selectors'
 import { uid } from '../utils/id'
+import { won } from '../utils/format'
 import { IconSort, IconTrash } from '../components/icons'
 
 const DAY_OPTIONS = [...Array(31)].map((_, i) => String(i + 1)).concat(['말일'])
@@ -25,6 +26,7 @@ export default function Fixed() {
     const rank = (r) => (r.day === '말일' ? 32 : parseInt(r.day, 10) || 99)
     d.fixed.sort((a, b) => rank(a) - rank(b))
   })
+  const total = rows.reduce((a, r) => a + (Number(r.amount) || 0), 0)
 
   return (
     <div className="grid">
@@ -83,6 +85,15 @@ export default function Fixed() {
                 )
               })}
             </tbody>
+            {rows.length > 0 && (
+              <tfoot>
+                <tr className="sec-total" style={{ background: 'var(--surface-2)' }}>
+                  <td colSpan={4} style={{ fontWeight: 800 }}>합계</td>
+                  <td className="r num" style={{ fontWeight: 900 }}>{won(total)}</td>
+                  <td colSpan={4}></td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </Card>

@@ -77,6 +77,7 @@ export default function Monthly() {
     return true
   })
   const anyFilter = fMajor || fMinor || fPay || fText
+  const filteredTotal = filtered.reduce((a, r) => a + (Number(r.amount) || 0), 0)
 
   // 행 조작
   const add = () => mutate((d) => d.monthly[m].rows.push(newRow()))
@@ -339,6 +340,15 @@ export default function Monthly() {
                 </tr>
               ))}
             </tbody>
+            {filtered.length > 0 && (
+              <tfoot>
+                <tr className="sec-total" style={{ background: 'var(--surface-2)' }}>
+                  <td colSpan={3} style={{ fontWeight: 800 }}>합계</td>
+                  <td className="r num" style={{ fontWeight: 900 }}>{won(filteredTotal)}</td>
+                  <td colSpan={5}></td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
         <div className="helper" style={{ marginTop: 8 }}>노란 배경 행은 고정내역/할부에서 자동으로 불러온 항목이에요. 클립 아이콘으로 영수증 사진을 첨부할 수 있어요.</div>

@@ -174,11 +174,13 @@ input, select, textarea { font-family: inherit; font-size: inherit; color: var(-
   backdrop-filter: blur(8px);
   position: sticky; top: 0; z-index: 20;
 }
-.topbar h1 { font-size: 16.5px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
-.topbar .crumb { color: var(--ink-3); font-size: 12px; font-weight: 600; }
-.topbar-spacer { flex: 1; }
+.topbar-title { min-width: 34px; flex: 0 1 auto; overflow: hidden; }
+.topbar h1 { font-size: 16.5px; font-weight: 800; margin: 0; letter-spacing: -.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbar .crumb { color: var(--ink-3); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.topbar .crumb-sub { flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.topbar-spacer { flex: 1; min-width: 8px; }
 
-.content { padding: 22px 24px 60px; max-width: 1500px; width: 100%; margin: 0 auto; }
+.content { padding: 22px 24px 60px; max-width: 1500px; width: 100%; margin: 0 auto; min-width: 0; }
 
 /* mobile menu button */
 .menu-btn {
@@ -194,12 +196,13 @@ input, select, textarea { font-family: inherit; font-size: inherit; color: var(-
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
+  min-width: 0; /* grid/flex item 기본 min-width:auto 로 인해 넓은 표가 화면 밖으로 밀려나는 것 방지 */
 }
 .card-pad { padding: 19px 21px; }
 .card-title { font-size: 13.5px; font-weight: 800; letter-spacing: -.1px; display: flex; align-items: center; gap: 8px; color: var(--ink); }
 .card-title .dot { width: 7px; height: 7px; border-radius: 50%; }
 
-.grid { display: grid; gap: 16px; }
+.grid { display: grid; gap: 16px; min-width: 0; }
 
 /* ---------- Buttons ---------- */
 .btn {
@@ -245,10 +248,15 @@ input, select, textarea { font-family: inherit; font-size: inherit; color: var(-
 .input.text-right { text-align: right; }
 
 /* ---------- Tables ---------- */
-.tbl-wrap { overflow-x: auto; border-radius: var(--radius-sm); border: 1px solid var(--line); background: #fff; }
+.tbl-wrap { overflow-x: auto; max-width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--line); background: #fff; }
 table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
 table.tbl th, table.tbl td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
 table.tbl thead th { background: var(--surface-2); font-weight: 800; color: var(--ink-2); font-size: 11.5px; position: sticky; top: 0; }
+table.tbl tfoot td { border-bottom: none; border-top: 2px solid var(--line-2); }
+/* 컬럼이 많은 표(할부 등)를 위한 압축 모드: 셀 여백/폰트를 줄여 실제 화면에 더 많이 들어오게 함 */
+table.tbl.compact th, table.tbl.compact td { padding: 6px 5px; font-size: 12px; }
+table.tbl.compact thead th { font-size: 10.5px; }
+table.tbl.compact .input, table.tbl.compact .select { padding: 5px 6px; font-size: 12px; }
 table.tbl tbody tr:hover { background: var(--surface-2); }
 table.tbl td.r, table.tbl th.r { text-align: right; }
 table.tbl td.c, table.tbl th.c { text-align: center; }
@@ -345,7 +353,8 @@ table.tbl td.c, table.tbl th.c { text-align: center; }
   .scrim { display: block; position: fixed; inset: 0; background: rgba(20,16,40,.4); z-index: 25; }
   .menu-btn { display: inline-flex; }
   .content { padding: 16px 14px 60px; }
-  .topbar { padding: 0 14px; }
+  .topbar { padding: 0 14px; gap: 10px; }
+  .crumb-sub { display: none; }
   .kpi-row { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 560px) {
