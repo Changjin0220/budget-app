@@ -9,6 +9,7 @@ import {
 import { won, num, deltaMark, MONTH_EN } from '../utils/format'
 import { daysInMonth, resolveBusinessDay } from '../utils/holidays'
 import { installmentOccurrences } from '../data/installments'
+import { loanOccurrences } from '../data/loans'
 import { uid } from '../utils/id'
 import { PALETTE } from '../data/defaults'
 import { compressImage } from '../utils/image'
@@ -96,12 +97,14 @@ export default function Monthly() {
   })
 
   const importFixed = () => mutate((d) => {
-    const existing = new Set(d.monthly[m].rows.filter((r) => r.source?.startsWith('fixed:')).map((r) => r.source))
+    const existingSrc = new Set(
+      d.monthly[m].rows.filter((r) => r.source?.startsWith('fixed:') || r.source?.startsWith('loan:')).map((r) => r.source),
+    )
     let cnt = 0
     for (const fx of d.fixed) {
       if (!fx.major) continue
       const src = `fixed:${fx.id}`
-      if (existing.has(src)) continue
+      if (existingSrc.has(src)) continue
       const kind = kindOf(d.settings, fx.major)
       let { month: rm, day } = resolveBusinessDay(year, m, fx.day, fx.holiday)
       if (rm < m) day = 1
@@ -111,6 +114,33 @@ export default function Monthly() {
         amount: fx.amount, payment: fx.payment, detail: fx.detail, memo: fx.memo, source: src,
       })
       cnt++
+    }
+    // 연결된 주택담보대출: 이자(지출) + 원금(저축) 행을 매달 정확한 금액으로 자동 계산해서 반영
+    for (const ln of (d.loans || [])) {
+      const occ = loanOccurrences(ln, year).filter((o) => o.month === m)
+      for (const o of occ) {
+        const memo = `(${o.seq}/${o.total}회) ${ln.name}`
+        if (o.interest > 0) {
+          const src = `loan:${ln.id}#${o.seq}:interest`
+          if (!existingSrc.has(src)) {
+            d.monthly[m].rows.push({
+              id: uid('mr'), day: o.day, kind: kindOf(d.settings, ln.interestMajor), major: ln.interestMajor, minor: ln.interestMinor,
+              amount: o.interest, payment: '', detail: '대출이자', memo, source: src,
+            })
+            cnt++
+          }
+        }
+        if (o.principal > 0) {
+          const src = `loan:${ln.id}#${o.seq}:principal`
+          if (!existingSrc.has(src)) {
+            d.monthly[m].rows.push({
+              id: uid('mr'), day: o.day, kind: kindOf(d.settings, ln.principalMajor), major: ln.principalMajor, minor: ln.principalMinor,
+              amount: o.principal, payment: '', detail: '대출원금', memo, source: src,
+            })
+            cnt++
+          }
+        }
+      }
     }
     showToast(cnt ? `고정내역 ${cnt}건을 불러왔어요` : '이미 모두 불러온 상태예요')
   })

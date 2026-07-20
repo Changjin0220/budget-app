@@ -21,6 +21,7 @@ function ensureShape(s) {
   }
   if (!out.fixed) out.fixed = []
   if (!out.installments) out.installments = []
+  if (!out.loans) out.loans = []
   if (!out.assets) out.assets = defaultAssets()
   return out
 }

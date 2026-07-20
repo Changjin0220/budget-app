@@ -1,4 +1,4 @@
-import { useMemo, Fragment } from 'react'
+import { useMemo, useState, Fragment } from 'react'
 import { useApp } from '../data/store'
 import { Card } from '../components/ui'
 import { AssetBar, MiniTrend, StackedComposition } from '../components/charts'
@@ -6,6 +6,8 @@ import { won, num, MONTHS } from '../utils/format'
 import { uid } from '../utils/id'
 import { parseNum } from '../utils/format'
 import { IconTrash } from '../components/icons'
+import { LoanModal, LoanList } from '../components/LoanModal'
+import { ensureLoanCategories } from '../data/loans'
 
 const TYPE_TONE = {
   비유동자산: { bg: 'var(--gold-100)', color: '#c9a94c' },
@@ -15,8 +17,23 @@ const TYPE_TONE = {
 }
 
 export default function Assets() {
-  const { state, mutate } = useApp()
+  const { state, mutate, showToast } = useApp()
   const groups = state.assets.groups
+  const loans = state.loans || []
+  const [loanModal, setLoanModal] = useState(null) // null | 'new' | loan object
+
+  const saveLoan = (draft) => {
+    mutate((d) => {
+      const cats = ensureLoanCategories(d.settings)
+      const toSave = { ...draft, ...cats }
+      const idx = d.loans.findIndex((x) => x.id === toSave.id)
+      if (idx >= 0) d.loans[idx] = toSave
+      else d.loans.push(toSave)
+    })
+    showToast('대출을 저장하고 반영했어요')
+    setLoanModal(null)
+  }
+  const removeLoan = (id) => mutate((d) => { d.loans = d.loans.filter((x) => x.id !== id) })
 
   const monthlySum = (type) => MONTHS.map((_, i) => {
     const g = groups.find((x) => x.type === type)
@@ -57,7 +74,12 @@ export default function Assets() {
       </div>
 
       {/* 자산 입력 매트릭스 */}
-      <Card title="월별 자산 입력" dot="#8b7ad6" right={<span className="helper">전세보증금·연금 등 큰 자산까지 매달 기록하면 순자산 흐름이 보여요</span>}>
+      <Card title="월별 자산 입력" dot="#8b7ad6" right={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <span className="helper">전세보증금·연금 등 큰 자산까지 매달 기록하면 순자산 흐름이 보여요</span>
+          <button className="btn primary sm" onClick={() => setLoanModal('new')}>＋ 주택 추가하기</button>
+        </div>
+      }>
         <div className="tbl-wrap">
           <table className="tbl">
             <thead>
@@ -124,7 +146,17 @@ export default function Assets() {
             </tbody>
           </table>
         </div>
+
+        <LoanList loans={loans} onEdit={(ln) => setLoanModal(ln)} onRemove={removeLoan} />
       </Card>
+
+      {loanModal && (
+        <LoanModal
+          initial={loanModal === 'new' ? null : loanModal}
+          onSave={saveLoan}
+          onClose={() => setLoanModal(null)}
+        />
+      )}
     </div>
   )
 }

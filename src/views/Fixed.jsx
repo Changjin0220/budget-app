@@ -6,6 +6,7 @@ import { kindOf } from '../data/selectors'
 import { uid } from '../utils/id'
 import { won } from '../utils/format'
 import { IconSort, IconTrash, IconChevronDown } from '../components/icons'
+import { loanOccurrences } from '../data/loans'
 
 const DAY_OPTIONS = [...Array(31)].map((_, i) => String(i + 1)).concat(['말일'])
 
@@ -76,9 +77,49 @@ function MajorSubtotals({ rows }) {
   )
 }
 
+// 대출(이자/원금)이 이번 연도 고정내역에 어떻게 반영되는지 요약
+function LoanLinkedSection({ loans, year }) {
+  if (!loans.length) return null
+  return (
+    <Card title="연결된 대출 상환" dot="#8b7ad6" right={<span className="helper">추가·수정은 자산 탭에서</span>}>
+      <div style={{ display: 'grid', gap: 8 }}>
+        {loans.map((ln) => {
+          const occ = loanOccurrences(ln, year)
+          const interestSum = occ.reduce((a, o) => a + o.interest, 0)
+          const principalSum = occ.reduce((a, o) => a + o.principal, 0)
+          return (
+            <div key={ln.id} style={{ padding: '12px 14px', background: 'var(--surface-2)', border: '1px solid var(--line)', borderRadius: 12 }}>
+              <div style={{ fontWeight: 800, marginBottom: 4 }}>{ln.name}</div>
+              {occ.length === 0 ? (
+                <div className="helper">{year}년에는 반영되는 회차가 없어요</div>
+              ) : (
+                <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <span className="helper">{year}년 {occ.length}개월 반영 (회차 {occ[0].seq}~{occ[occ.length - 1].seq})</span>
+                  <span>
+                    <span className="pill expense">{ln.interestMajor} · {ln.interestMinor}</span>
+                    <span className="num" style={{ marginLeft: 6, fontWeight: 700 }}>{year}년 합계 {won(interestSum)}</span>
+                  </span>
+                  <span>
+                    <span className="pill save">{ln.principalMajor} · {ln.principalMinor}</span>
+                    <span className="num" style={{ marginLeft: 6, fontWeight: 700 }}>{year}년 합계 {won(principalSum)}</span>
+                  </span>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+      <div className="helper" style={{ marginTop: 10 }}>
+        월간내역 → <b>고정내역 불러오기</b>를 누르면 각 달의 정확한 이자·원금이 자동으로 채워져요. 금액이 매달 달라지기 때문에 여기(고정내역 표)에는 별도 행으로 넣지 않고 요약만 보여드려요.
+      </div>
+    </Card>
+  )
+}
+
 export default function Fixed() {
   const { state, mutate } = useApp()
   const rows = state.fixed
+  const loans = state.loans || []
 
   const add = () => mutate((d) => d.fixed.push(newRow()))
   const patch = (i, key, v) => mutate((d) => {
@@ -161,6 +202,8 @@ export default function Fixed() {
           </table>
         </div>
       </Card>
+
+      <LoanLinkedSection loans={loans} year={state.settings.year} />
 
       <MajorSubtotals rows={rows} />
 
