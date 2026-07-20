@@ -1,15 +1,79 @@
+import { useMemo, useState, Fragment } from 'react'
 import { useApp } from '../data/store'
 import { Card } from '../components/ui'
 import { MajorSelect, MinorSelect, PaymentSelect, HolidaySelect, AmountInput, kindTag } from '../components/fields'
 import { kindOf } from '../data/selectors'
 import { uid } from '../utils/id'
 import { won } from '../utils/format'
-import { IconSort, IconTrash } from '../components/icons'
+import { IconSort, IconTrash, IconChevronDown } from '../components/icons'
 
 const DAY_OPTIONS = [...Array(31)].map((_, i) => String(i + 1)).concat(['말일'])
 
 function newRow() {
   return { id: uid('fx'), major: '', minor: '', day: '1', holiday: '-', amount: '', payment: '', detail: '', memo: '' }
+}
+
+// 대분류별 소계 (클릭 시 소분류별 금액 펼침/접힘, 기본은 전부 접힘)
+function MajorSubtotals({ rows }) {
+  const [open, setOpen] = useState(() => new Set())
+  const toggle = (major) => setOpen((prev) => {
+    const n = new Set(prev)
+    n.has(major) ? n.delete(major) : n.add(major)
+    return n
+  })
+
+  const groups = useMemo(() => {
+    const order = []
+    const map = new Map()
+    for (const r of rows) {
+      if (!r.major) continue
+      const amt = Number(r.amount) || 0
+      if (!map.has(r.major)) { map.set(r.major, new Map()); order.push(r.major) }
+      const minors = map.get(r.major)
+      const key = r.minor || '(소분류 없음)'
+      minors.set(key, (minors.get(key) || 0) + amt)
+    }
+    return order.map((major) => {
+      const minors = Array.from(map.get(major).entries()).map(([minor, amount]) => ({ minor, amount }))
+      const total = minors.reduce((a, m) => a + m.amount, 0)
+      return { major, total, minors }
+    })
+  }, [rows])
+
+  if (groups.length === 0) return null
+
+  return (
+    <Card title="대분류별 소계" dot="#8b7ad6">
+      <div className="tbl-wrap" style={{ border: 'none' }}>
+        <table className="tbl">
+          <tbody>
+            {groups.map((g) => {
+              const isOpen = open.has(g.major)
+              return (
+                <Fragment key={g.major}>
+                  <tr className="subtotal-row" onClick={() => toggle(g.major)}>
+                    <td style={{ fontWeight: 800 }}>
+                      <span className="subtotal-chevron" style={{ transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}>
+                        <IconChevronDown size={14} />
+                      </span>
+                      {g.major}
+                    </td>
+                    <td className="r num" style={{ fontWeight: 800 }}>{won(g.total)}</td>
+                  </tr>
+                  {isOpen && g.minors.map((m) => (
+                    <tr key={m.minor}>
+                      <td style={{ paddingLeft: 34, color: 'var(--ink-2)' }}>{m.minor}</td>
+                      <td className="r num" style={{ color: 'var(--ink-2)' }}>{won(m.amount)}</td>
+                    </tr>
+                  ))}
+                </Fragment>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  )
 }
 
 export default function Fixed() {
@@ -97,6 +161,8 @@ export default function Fixed() {
           </table>
         </div>
       </Card>
+
+      <MajorSubtotals rows={rows} />
 
       <Card title="휴일 옵션이 뭔가요?" dot="#f2c94c">
         <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.7, fontSize: 13, color: 'var(--ink-2)' }}>

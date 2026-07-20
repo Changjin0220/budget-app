@@ -253,6 +253,11 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
 table.tbl th, table.tbl td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
 table.tbl thead th { background: var(--surface-2); font-weight: 800; color: var(--ink-2); font-size: 11.5px; position: sticky; top: 0; }
 table.tbl tfoot td { border-bottom: none; border-top: 2px solid var(--line-2); }
+/* 대분류 소계 펼치기/접기 행 */
+.tbl tr.subtotal-row { cursor: pointer; }
+.tbl tr.subtotal-row:hover td { background: var(--surface-2); }
+.tbl tr.subtotal-row td:first-child { display: flex; align-items: center; gap: 6px; }
+.subtotal-chevron { display: inline-flex; color: var(--ink-3); transition: transform .15s; }
 /* 컬럼이 많은 표(할부 등)를 위한 압축 모드: 셀 여백/폰트를 줄여 실제 화면에 더 많이 들어오게 함 */
 table.tbl.compact th, table.tbl.compact td { padding: 6px 5px; font-size: 12px; }
 table.tbl.compact thead th { font-size: 10.5px; }

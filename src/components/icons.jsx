@@ -68,6 +68,9 @@ export const IconSave = (p) => (
   <Svg {...p}><path d="M5 4.5h11L20 8.5V19a1 1 0 01-1 1H5a1 1 0 01-1-1V5.5a1 1 0 011-1z" />
     <path d="M8 4.5V9h7V4.5" /><path d="M8 14h8v5.5H8z" /></Svg>
 )
+export const IconChevronDown = (p) => (
+  <Svg {...p}><path d="M6 9l6 6 6-6" /></Svg>
+)
 export const IconImage = (p) => (
   <Svg {...p}><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
     <circle cx="9" cy="10" r="1.6" /><path d="M20 16l-4.8-4.8a1.5 1.5 0 00-2.1 0L4 20.5" /></Svg>
