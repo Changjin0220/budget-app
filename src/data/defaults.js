@@ -73,6 +73,14 @@ export const PROFILES = [
   { id: '효연', name: '효연', color: '#f0a9bf' },
 ]
 
+// 창진+효연 데이터를 합산해서 보는 읽기 전용 "가구 전체" 뷰
+export const COMMON_ID = '공통'
+export const COMMON_PROFILE = {
+  id: COMMON_ID, name: '공통', color: '#5bb8a6',
+  avatarBg: 'linear-gradient(135deg, #8b7ad6 50%, #f0a9bf 50%)',
+}
+export const ALL_PROFILES = [...PROFILES, COMMON_PROFILE]
+
 // 카테고리(대분류) 도넛/막대 색상 팔레트 (파스텔)
 export const PALETTE = [
   '#b3a4e0', '#f2c94c', '#7fccbd', '#f0a9bf', '#a5c8f0',

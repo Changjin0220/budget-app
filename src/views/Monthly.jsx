@@ -42,7 +42,7 @@ function SummaryRow({ label, value, strong, color, hi }) {
 }
 
 export default function Monthly() {
-  const { state, mutate, showToast } = useApp()
+  const { state, mutate, showToast, isCommon } = useApp()
   const [confirm, confirmDialog] = useConfirm()
   const [m, setM] = useState(() => new Date().getMonth() + 1)
   const year = state.settings.year
@@ -79,7 +79,6 @@ export default function Monthly() {
     return true
   })
   const anyFilter = fMajor || fMinor || fPay || fText
-  const filteredTotal = filtered.reduce((a, r) => a + (Number(r.amount) || 0), 0)
 
   // 행 조작
   const add = () => mutate((d) => d.monthly[m].rows.unshift(newRow()))
@@ -267,15 +266,15 @@ export default function Monthly() {
           </Card>
 
           <Card title="체크리스트" dot="#7fccbd"
-            right={<button className="chip-btn" onClick={addCheck}>＋ 추가</button>}>
+            right={<button className="chip-btn" onClick={addCheck} disabled={isCommon}>＋ 추가</button>}>
             {month.checklist.length === 0 && <div className="helper">이달의 목표나 다짐을 적어보세요 (예: 식비 20만원 도전!)</div>}
             <div style={{ display: 'grid', gap: 6 }}>
               {month.checklist.map((c) => (
                 <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input type="checkbox" checked={c.done} onChange={(e) => patchCheck(c.id, 'done', e.target.checked)} style={{ width: 17, height: 17 }} />
+                  <input type="checkbox" checked={c.done} onChange={(e) => patchCheck(c.id, 'done', e.target.checked)} style={{ width: 17, height: 17 }} disabled={isCommon} />
                   <input className="input" value={c.text} placeholder="할 일 / 다짐" onChange={(e) => patchCheck(c.id, 'text', e.target.value)}
-                    style={{ textDecoration: c.done ? 'line-through' : 'none', opacity: c.done ? .6 : 1 }} />
-                  <button className="btn ghost sm" onClick={() => rmCheck(c.id)}><IconClose size={13} /></button>
+                    style={{ textDecoration: c.done ? 'line-through' : 'none', opacity: c.done ? .6 : 1 }} disabled={isCommon} />
+                  <button className="btn ghost sm" onClick={() => rmCheck(c.id)} disabled={isCommon}><IconClose size={13} /></button>
                 </div>
               ))}
             </div>
@@ -308,11 +307,11 @@ export default function Monthly() {
           <div style={{ fontWeight: 800, fontSize: 15 }}>데일리 내역</div>
           <span className="pill" style={{ background: 'var(--lav-100)', color: 'var(--lav-700)' }}>{rows.length}건</span>
           <div style={{ flex: 1 }} />
-          <button className="btn gold" onClick={importFixed}><IconDownload size={14} />고정내역 불러오기</button>
-          <button className="btn" onClick={importInstallments}><IconDownload size={14} />할부 불러오기</button>
-          <button className="btn" onClick={importPrevBudget}><IconUndo size={14} />전월예산 불러오기</button>
-          <button className="btn" onClick={sortByDate}><IconSort size={14} />날짜 정렬</button>
-          <button className="btn primary" onClick={add}>＋ 행 추가</button>
+          <button className="btn gold" onClick={importFixed} disabled={isCommon}><IconDownload size={14} />고정내역 불러오기</button>
+          <button className="btn" onClick={importInstallments} disabled={isCommon}><IconDownload size={14} />할부 불러오기</button>
+          <button className="btn" onClick={importPrevBudget} disabled={isCommon}><IconUndo size={14} />전월예산 불러오기</button>
+          <button className="btn" onClick={sortByDate} disabled={isCommon}><IconSort size={14} />날짜 정렬</button>
+          <button className="btn primary" onClick={add} disabled={isCommon}>＋ 행 추가</button>
         </div>
 
         {/* 필터 바 */}
@@ -351,36 +350,27 @@ export default function Monthly() {
                 <tr key={r.id} style={r.source ? { background: 'rgba(242,201,76,.06)' } : undefined}>
                   <td className="c">
                     <input className="input" style={{ width: 54, textAlign: 'center', padding: '6px 4px' }} type="number" min="1" max={dim}
-                      value={r.day} onChange={(e) => patch(r.id, 'day', Math.min(Math.max(Number(e.target.value) || 1, 1), dim))} />
+                      value={r.day} onChange={(e) => patch(r.id, 'day', Math.min(Math.max(Number(e.target.value) || 1, 1), dim))} disabled={isCommon} />
                   </td>
-                  <td><MajorSelect value={r.major} onChange={(v) => patch(r.id, 'major', v)} /></td>
-                  <td><MinorSelect major={r.major} value={r.minor} onChange={(v) => patch(r.id, 'minor', v)} /></td>
-                  <td><AmountInput value={r.amount} onChange={(v) => patch(r.id, 'amount', v)} /></td>
-                  <td><PaymentSelect value={r.payment} onChange={(v) => patch(r.id, 'payment', v)} /></td>
-                  <td><input className="input" value={r.detail} onChange={(e) => patch(r.id, 'detail', e.target.value)} /></td>
-                  <td><input className="input" value={r.memo} onChange={(e) => patch(r.id, 'memo', e.target.value)} /></td>
+                  <td><MajorSelect value={r.major} onChange={(v) => patch(r.id, 'major', v)} disabled={isCommon} /></td>
+                  <td><MinorSelect major={r.major} value={r.minor} onChange={(v) => patch(r.id, 'minor', v)} disabled={isCommon} /></td>
+                  <td><AmountInput value={r.amount} onChange={(v) => patch(r.id, 'amount', v)} disabled={isCommon} /></td>
+                  <td><PaymentSelect value={r.payment} onChange={(v) => patch(r.id, 'payment', v)} disabled={isCommon} /></td>
+                  <td><input className="input" value={r.detail} onChange={(e) => patch(r.id, 'detail', e.target.value)} disabled={isCommon} /></td>
+                  <td><input className="input" value={r.memo} onChange={(e) => patch(r.id, 'memo', e.target.value)} disabled={isCommon} /></td>
                   <td className="c">
                     {r.receipt
                       ? <button className="btn ghost sm" title="영수증 보기" onClick={() => setViewReceipt(r.id)} style={{ padding: '2px 4px' }}>
                           <img src={r.receipt} alt="영수증" style={{ width: 30, height: 30, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--line-2)' }} />
                         </button>
-                      : <label className="btn ghost sm" title="영수증 첨부" style={{ cursor: 'pointer' }}><IconPaperclip size={14} />
-                          <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => attachReceipt(r.id, e.target.files?.[0])} />
+                      : <label className="btn ghost sm" title="영수증 첨부" style={isCommon ? { opacity: .5, pointerEvents: 'none' } : { cursor: 'pointer' }}><IconPaperclip size={14} />
+                          <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => attachReceipt(r.id, e.target.files?.[0])} disabled={isCommon} />
                         </label>}
                   </td>
-                  <td><button className="btn ghost sm danger" onClick={() => remove(r.id)}><IconTrash size={14} /></button></td>
+                  <td><button className="btn ghost sm danger" onClick={() => remove(r.id)} disabled={isCommon}><IconTrash size={14} /></button></td>
                 </tr>
               ))}
             </tbody>
-            {filtered.length > 0 && (
-              <tfoot>
-                <tr className="sec-total" style={{ background: 'var(--surface-2)' }}>
-                  <td colSpan={3} style={{ fontWeight: 800 }}>합계</td>
-                  <td className="r num" style={{ fontWeight: 900 }}>{won(filteredTotal)}</td>
-                  <td colSpan={5}></td>
-                </tr>
-              </tfoot>
-            )}
           </table>
         </div>
         <div className="helper" style={{ marginTop: 8 }}>노란 배경 행은 고정내역/할부에서 자동으로 불러온 항목이에요. 클립 아이콘으로 영수증 사진을 첨부할 수 있어요.</div>
@@ -410,7 +400,7 @@ export default function Monthly() {
 
 // ---------- 목표/예산 대비 테이블 ----------
 function BudgetTables({ m, rows, prevRows, budgets, setBudget }) {
-  const { state } = useApp()
+  const { state, isCommon } = useApp()
   const majors = allMajors(state.settings)
 
   const groupTotal = (groupName, kind, src) => src
@@ -456,7 +446,7 @@ function BudgetTables({ m, rows, prevRows, budgets, setBudget }) {
                     <td className="r num">
                       <input className="input text-right" style={{ width: 100, padding: '5px 8px' }}
                         value={bud ? bud.toLocaleString('ko-KR') : ''} placeholder="0"
-                        onChange={(e) => setBudget(g.name, Number(String(e.target.value).replace(/[^0-9]/g, '')) || 0)} />
+                        onChange={(e) => setBudget(g.name, Number(String(e.target.value).replace(/[^0-9]/g, '')) || 0)} disabled={isCommon} />
                     </td>
                     {isExpense && (
                       <td>

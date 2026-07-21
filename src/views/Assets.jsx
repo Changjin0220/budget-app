@@ -17,7 +17,7 @@ const TYPE_TONE = {
 }
 
 export default function Assets() {
-  const { state, mutate, showToast } = useApp()
+  const { state, mutate, showToast, isCommon } = useApp()
   const [confirm, confirmDialog] = useConfirm()
   const groups = state.assets.groups
   const loans = state.loans || []
@@ -84,7 +84,7 @@ export default function Assets() {
       <Card title="월별 자산 입력" dot="#8b7ad6" right={
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <span className="helper">전세보증금·연금 등 큰 자산까지 매달 기록하면 순자산 흐름이 보여요</span>
-          <button className="btn primary sm" onClick={() => setLoanModal('new')}>＋ 주택 추가하기</button>
+          <button className="btn primary sm" onClick={() => setLoanModal('new')} disabled={isCommon}>＋ 주택 추가하기</button>
         </div>
       }>
         <div className="tbl-wrap">
@@ -108,18 +108,18 @@ export default function Assets() {
                         {ri === 0 && (
                           <td rowSpan={g.rows.length} style={{ fontWeight: 800, verticalAlign: 'top', background: tone.bg, color: tone.color }}>
                             {g.type}
-                            <div><button className="chip-btn" style={{ marginTop: 6, padding: '3px 8px', fontSize: 11 }} onClick={() => addRow(gi)}>＋ 항목</button></div>
+                            <div><button className="chip-btn" style={{ marginTop: 6, padding: '3px 8px', fontSize: 11 }} onClick={() => addRow(gi)} disabled={isCommon}>＋ 항목</button></div>
                           </td>
                         )}
-                        <td><input className="input" value={r.name} onChange={(e) => setName(gi, ri, e.target.value)} /></td>
+                        <td><input className="input" value={r.name} onChange={(e) => setName(gi, ri, e.target.value)} disabled={isCommon} /></td>
                         {MONTHS.map((_, mi) => (
                           <td key={mi}>
                             <input className="input text-right" style={{ padding: '5px 6px', minWidth: 84 }}
                               value={r.values[mi] === '' || r.values[mi] === undefined ? '' : Number(r.values[mi]).toLocaleString('ko-KR')}
-                              onChange={(e) => setVal(gi, ri, mi, parseNum(e.target.value))} />
+                              onChange={(e) => setVal(gi, ri, mi, parseNum(e.target.value))} disabled={isCommon} />
                           </td>
                         ))}
-                        <td><button className="btn ghost sm danger" onClick={() => rmRow(gi, ri)}><IconTrash size={14} /></button></td>
+                        <td><button className="btn ghost sm danger" onClick={() => rmRow(gi, ri)} disabled={isCommon}><IconTrash size={14} /></button></td>
                       </tr>
                     ))}
                     <tr className="sec-total" style={{ background: tone.bg }}>

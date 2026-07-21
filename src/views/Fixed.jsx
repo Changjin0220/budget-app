@@ -117,7 +117,7 @@ function LoanLinkedSection({ loans, year }) {
 }
 
 export default function Fixed() {
-  const { state, mutate } = useApp()
+  const { state, mutate, isCommon } = useApp()
   const rows = state.fixed
   const loans = state.loans || []
   const [confirm, confirmDialog] = useConfirm()
@@ -146,8 +146,8 @@ export default function Fixed() {
             <div className="helper" style={{ marginTop: 2 }}>한 번 입력해두면 매달 <b>월간내역 → 고정내역 불러오기</b>로 자동 반영돼요.</div>
           </div>
           <div style={{ flex: 1 }} />
-          <button className="btn" onClick={sortByDate}><IconSort size={14} />날짜 정렬</button>
-          <button className="btn primary" onClick={add}>＋ 행 추가</button>
+          <button className="btn" onClick={sortByDate} disabled={isCommon}><IconSort size={14} />날짜 정렬</button>
+          <button className="btn primary" onClick={add} disabled={isCommon}>＋ 행 추가</button>
         </div>
 
         <div className="tbl-wrap">
@@ -175,21 +175,21 @@ export default function Fixed() {
                   <tr key={r.id}>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <MajorSelect value={r.major} onChange={(v) => patch(i, 'major', v)} />
+                        <MajorSelect value={r.major} onChange={(v) => patch(i, 'major', v)} disabled={isCommon} />
                       </div>
                     </td>
-                    <td><MinorSelect major={r.major} value={r.minor} onChange={(v) => patch(i, 'minor', v)} /></td>
+                    <td><MinorSelect major={r.major} value={r.minor} onChange={(v) => patch(i, 'minor', v)} disabled={isCommon} /></td>
                     <td className="c">
-                      <select className="select" value={r.day} onChange={(e) => patch(i, 'day', e.target.value)}>
+                      <select className="select" value={r.day} onChange={(e) => patch(i, 'day', e.target.value)} disabled={isCommon}>
                         {DAY_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
                       </select>
                     </td>
-                    <td><HolidaySelect value={r.holiday} onChange={(v) => patch(i, 'holiday', v)} /></td>
-                    <td><AmountInput value={r.amount} onChange={(v) => patch(i, 'amount', v)} /></td>
-                    <td><PaymentSelect value={r.payment} onChange={(v) => patch(i, 'payment', v)} /></td>
-                    <td><input className="input" value={r.detail} onChange={(e) => patch(i, 'detail', e.target.value)} placeholder="예: 넷플릭스" /></td>
-                    <td><input className="input" value={r.memo} onChange={(e) => patch(i, 'memo', e.target.value)} placeholder="비고" /></td>
-                    <td><button className="btn ghost sm danger" onClick={() => remove(i)} title="삭제"><IconTrash size={14} /></button></td>
+                    <td><HolidaySelect value={r.holiday} onChange={(v) => patch(i, 'holiday', v)} disabled={isCommon} /></td>
+                    <td><AmountInput value={r.amount} onChange={(v) => patch(i, 'amount', v)} disabled={isCommon} /></td>
+                    <td><PaymentSelect value={r.payment} onChange={(v) => patch(i, 'payment', v)} disabled={isCommon} /></td>
+                    <td><input className="input" value={r.detail} onChange={(e) => patch(i, 'detail', e.target.value)} placeholder="예: 넷플릭스" disabled={isCommon} /></td>
+                    <td><input className="input" value={r.memo} onChange={(e) => patch(i, 'memo', e.target.value)} placeholder="비고" disabled={isCommon} /></td>
+                    <td><button className="btn ghost sm danger" onClick={() => remove(i)} title="삭제" disabled={isCommon}><IconTrash size={14} /></button></td>
                   </tr>
                 )
               })}

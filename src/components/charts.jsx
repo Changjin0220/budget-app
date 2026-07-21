@@ -26,7 +26,8 @@ export function DonutChart({ data, height = 220, colors = PALETTE, centerTop, ce
             startAngle={90} endAngle={-270}>
             {data.map((d, i) => <Cell key={i} fill={d.color || colors[i % colors.length]} />)}
           </Pie>
-          <Tooltip contentStyle={tooltipStyle} formatter={(v, n) => [fmtTip(v) + (total ? ` (${((v / total) * 100).toFixed(1)}%)` : ''), n]} />
+          <Tooltip contentStyle={tooltipStyle} position={{ y: 0 }}
+            formatter={(v, n) => [fmtTip(v) + (total ? ` (${((v / total) * 100).toFixed(1)}%)` : ''), n]} />
           {showLegend && <Legend verticalAlign="bottom" height={28} iconType="circle" wrapperStyle={{ fontSize: 11 }} />}
         </PieChart>
       </ResponsiveContainer>

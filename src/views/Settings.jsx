@@ -12,22 +12,22 @@ const SECTION_META = {
   expense: { key: 'expense', label: '지출', color: '#b3a4e0', bg: 'var(--lav-100)' },
 }
 
-function EditableChip({ value, onChange, onRemove }) {
+function EditableChip({ value, onChange, onRemove, disabled }) {
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 4,
       background: '#fff', border: '1px solid var(--line-2)', borderRadius: 20,
       padding: '3px 6px 3px 10px',
     }}>
-      <input value={value} onChange={(e) => onChange(e.target.value)}
+      <input value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled}
         style={{ border: 'none', outline: 'none', width: `${Math.max(value.length, 3) + 1}ch`, fontWeight: 600, fontSize: 12.5 }} />
-      <button className="btn ghost sm" style={{ padding: '1px 5px', color: 'var(--ink-3)' }} onClick={onRemove} title="삭제"><IconClose size={11} /></button>
+      <button className="btn ghost sm" style={{ padding: '1px 5px', color: 'var(--ink-3)' }} onClick={onRemove} title="삭제" disabled={disabled}><IconClose size={11} /></button>
     </span>
   )
 }
 
 function CategorySection({ sectionKey }) {
-  const { state, mutate } = useApp()
+  const { state, mutate, isCommon } = useApp()
   const [confirm, confirmDialog] = useConfirm()
   const meta = SECTION_META[sectionKey]
   const groups = state.settings[sectionKey]
@@ -49,7 +49,7 @@ function CategorySection({ sectionKey }) {
 
   return (
     <Card title={`${meta.label} 분류`} dot={meta.color}
-      right={<button className="chip-btn" onClick={addGroup}>＋ 대분류 추가</button>}>
+      right={<button className="chip-btn" onClick={addGroup} disabled={isCommon}>＋ 대분류 추가</button>}>
       <div style={{ display: 'grid', gap: 10 }}>
         {groups.map((g, gi) => (
           <div key={g.id} style={{
@@ -57,15 +57,15 @@ function CategorySection({ sectionKey }) {
             padding: '10px 12px', background: 'var(--surface-2)', borderRadius: 12, border: '1px solid var(--line)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <input value={g.name} onChange={(e) => renameGroup(gi, e.target.value)}
+              <input value={g.name} onChange={(e) => renameGroup(gi, e.target.value)} disabled={isCommon}
                 className="input" style={{ fontWeight: 800, background: meta.bg, border: `1px solid ${meta.color}55` }} />
-              <button className="btn ghost sm" style={{ color: 'var(--ink-3)' }} onClick={() => removeGroup(gi)} title="대분류 삭제"><IconTrash size={13} /></button>
+              <button className="btn ghost sm" style={{ color: 'var(--ink-3)' }} onClick={() => removeGroup(gi)} title="대분류 삭제" disabled={isCommon}><IconTrash size={13} /></button>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, alignItems: 'center' }}>
               {g.subs.map((s, si) => (
-                <EditableChip key={s.id} value={s.name} onChange={(v) => renameSub(gi, si, v)} onRemove={() => removeSub(gi, si)} />
+                <EditableChip key={s.id} value={s.name} onChange={(v) => renameSub(gi, si, v)} onRemove={() => removeSub(gi, si)} disabled={isCommon} />
               ))}
-              <button className="chip-btn" onClick={() => addSub(gi)}>＋ 소분류</button>
+              <button className="chip-btn" onClick={() => addSub(gi)} disabled={isCommon}>＋ 소분류</button>
             </div>
           </div>
         ))}
@@ -76,7 +76,7 @@ function CategorySection({ sectionKey }) {
 }
 
 function PaymentsCard() {
-  const { state, mutate } = useApp()
+  const { state, mutate, isCommon } = useApp()
   const [confirm, confirmDialog] = useConfirm()
   const pays = state.settings.payments
   const removePayment = async (i) => {
@@ -85,12 +85,12 @@ function PaymentsCard() {
   }
   return (
     <Card title="결제수단" dot="#a5c8f0"
-      right={<button className="chip-btn" onClick={() => mutate((d) => d.settings.payments.push('새 결제수단'))}>＋ 추가</button>}>
+      right={<button className="chip-btn" onClick={() => mutate((d) => d.settings.payments.push('새 결제수단'))} disabled={isCommon}>＋ 추가</button>}>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         {pays.map((p, i) => (
           <EditableChip key={i} value={p}
             onChange={(v) => mutate((d) => { d.settings.payments[i] = v })}
-            onRemove={() => removePayment(i)} />
+            onRemove={() => removePayment(i)} disabled={isCommon} />
         ))}
       </div>
       {confirmDialog}
@@ -169,7 +169,7 @@ create policy "app all" on budgets
 }
 
 export default function Settings() {
-  const { state, mutate, profile, showToast, replaceState } = useApp()
+  const { state, mutate, profile, isCommon, showToast, replaceState } = useApp()
   const s = state.settings
   const [importOpen, setImportOpen] = useState(false)
 
@@ -204,17 +204,17 @@ export default function Settings() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 16 }}>
           <div className="field">
             <label>연도</label>
-            <input className="input" type="number" value={s.year}
+            <input className="input" type="number" value={s.year} disabled={isCommon}
               onChange={(e) => mutate((d) => { d.settings.year = Number(e.target.value) || d.settings.year })} />
           </div>
           <div className="field">
             <label>가계부 시작일 (매월 며칠부터)</label>
-            <input className="input" type="number" min="1" max="28" value={s.startDay}
+            <input className="input" type="number" min="1" max="28" value={s.startDay} disabled={isCommon}
               onChange={(e) => mutate((d) => { d.settings.startDay = Number(e.target.value) || 1 })} />
           </div>
           <div className="field">
-            <label>연간 목표 저축액</label>
-            <input className="input text-right" value={s.yearGoalSaving === '' ? '' : Number(s.yearGoalSaving).toLocaleString('ko-KR')}
+            <label>연간 목표 저축액{isCommon && <span className="helper"> (창진+효연 합산)</span>}</label>
+            <input className="input text-right" value={s.yearGoalSaving === '' ? '' : Number(s.yearGoalSaving).toLocaleString('ko-KR')} disabled={isCommon}
               onChange={(e) => mutate((d) => { d.settings.yearGoalSaving = parseNum(e.target.value) || 0 })} />
           </div>
         </div>
@@ -228,13 +228,15 @@ export default function Settings() {
 
       <Card title="데이터 백업 / 복원" dot="#f2a98f">
         <p className="helper" style={{ marginTop: 0 }}>
-          지금은 데이터가 이 기기에만 저장돼요. 다른 기기(배우자 폰 등)로 옮기려면 백업 파일을 내보낸 뒤 그 기기에서 가져오면 됩니다.
-          <br />추후 클라우드 동기화를 붙이면 이 과정 없이 자동 공유됩니다.
+          {isCommon
+            ? '공통 보기는 창진+효연을 그때그때 합쳐서 보여주는 화면이라 자체 백업이 없어요. 백업은 창진 또는 효연 프로필로 전환해서 이용해주세요.'
+            : <>지금은 데이터가 이 기기에만 저장돼요. 다른 기기(배우자 폰 등)로 옮기려면 백업 파일을 내보낸 뒤 그 기기에서 가져오면 됩니다.
+              <br />추후 클라우드 동기화를 붙이면 이 과정 없이 자동 공유됩니다.</>}
         </p>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <button className="btn primary" onClick={doExport}><IconDownload size={14} />백업 내보내기</button>
-          <label className="btn"><IconUpload size={14} />백업 가져오기
-            <input type="file" accept="application/json" style={{ display: 'none' }} onChange={doImport} />
+          <button className="btn primary" onClick={doExport} disabled={isCommon}><IconDownload size={14} />백업 내보내기</button>
+          <label className="btn" style={isCommon ? { opacity: .5, pointerEvents: 'none' } : undefined}><IconUpload size={14} />백업 가져오기
+            <input type="file" accept="application/json" style={{ display: 'none' }} onChange={doImport} disabled={isCommon} />
           </label>
         </div>
       </Card>

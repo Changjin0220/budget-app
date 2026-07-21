@@ -36,7 +36,7 @@ export function getLastProfile() {
   try { return localStorage.getItem(LAST_PROFILE) } catch { return null }
 }
 export function setLastProfile(p) {
-  try { localStorage.setItem(LAST_PROFILE, p) } catch { /* noop */ }
+  try { p ? localStorage.setItem(LAST_PROFILE, p) : localStorage.removeItem(LAST_PROFILE) } catch { /* noop */ }
 }
 
 // 로컬 저장본의 버전 타임스탬프(ms) — 클라우드 동기화 비교용

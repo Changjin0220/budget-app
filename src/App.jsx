@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useApp } from './data/store'
-import { PROFILES } from './data/defaults'
+import { ALL_PROFILES, PROFILES } from './data/defaults'
 import ProfileGate from './components/ProfileGate'
 import Dashboard from './views/Dashboard'
 import Monthly from './views/Monthly'
@@ -42,13 +42,13 @@ function SyncBadge() {
 }
 
 export default function App() {
-  const { profile, state, setProfile } = useApp()
+  const { profile, isCommon, state, setProfile } = useApp()
   const [view, setView] = useState('dashboard')
   const [menuOpen, setMenuOpen] = useState(false)
 
   if (!profile || !state) return <ProfileGate />
 
-  const me = PROFILES.find((p) => p.id === profile) || PROFILES[0]
+  const me = ALL_PROFILES.find((p) => p.id === profile) || PROFILES[0]
   const active = NAV.find((n) => n.id === view) || NAV[0]
   const View = VIEWS[view]
 
@@ -67,8 +67,8 @@ export default function App() {
         </div>
 
         <button className="profile-chip" onClick={() => setProfile(null)} title="프로필 전환">
-          <span className="profile-avatar" style={{ background: me.color }}>{me.name[0]}</span>
-          <span className="who">{me.name} 님</span>
+          <span className="profile-avatar" style={{ background: me.avatarBg || me.color }}>{me.name[0]}</span>
+          <span className="who">{isCommon ? '공통 보기' : `${me.name} 님`}</span>
           <span className="swap"><IconSwap size={13} />전환</span>
         </button>
 
@@ -79,7 +79,10 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div className="sidebar-foot"><IconSave size={13} />이 기기에 자동 저장됨</div>
+        <div className="sidebar-foot">
+          <IconSave size={13} />
+          {isCommon ? '읽기 전용 · 저장되지 않음' : '이 기기에 자동 저장됨'}
+        </div>
       </aside>
 
       <div className="main">
@@ -88,12 +91,13 @@ export default function App() {
           <div className="topbar-title">
             <h1>{active.label}</h1>
           </div>
+          {isCommon && <span className="pill" style={{ background: 'var(--mint-100)', color: '#2f8574' }}>읽기 전용</span>}
           <span className="crumb crumb-sub" style={{ marginLeft: 4 }}>· {active.crumb}</span>
           <div className="topbar-spacer" />
           <SyncBadge />
           <RemindersBell />
           <span className="crumb" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span className="profile-avatar" style={{ background: me.color, width: 24, height: 24, fontSize: 11 }}>{me.name[0]}</span>
+            <span className="profile-avatar" style={{ background: me.avatarBg || me.color, width: 24, height: 24, fontSize: 11 }}>{me.name[0]}</span>
             {me.name}
           </span>
         </header>

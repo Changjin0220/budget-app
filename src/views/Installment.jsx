@@ -6,7 +6,7 @@ import { won, num } from '../utils/format'
 import { IconUndo, IconTrash } from '../components/icons'
 
 export default function Installment() {
-  const { state, mutate, showToast } = useApp()
+  const { state, mutate, showToast, isCommon } = useApp()
   const rows = state.installments
   const year = state.settings.year
   const [confirm, confirmDialog] = useConfirm()
@@ -36,7 +36,7 @@ export default function Installment() {
             <div className="helper" style={{ marginTop: 2 }}>할부 정보를 입력하면 <b>월간내역 → 할부 불러오기</b>로 상환일·휴일옵션에 맞춰 매달 자동 반영돼요. (납부회차 자동 표시)</div>
           </div>
           <div style={{ flex: 1 }} />
-          <button className="btn primary" onClick={add}>＋ 할부 추가</button>
+          <button className="btn primary" onClick={add} disabled={isCommon}>＋ 할부 추가</button>
         </div>
 
         <div className="tbl-wrap">
@@ -73,21 +73,21 @@ export default function Installment() {
                   <tr key={it.id} style={it.apply ? undefined : { opacity: .5 }}>
                     <td className="c">
                       <button className={`btn sm ${it.apply ? 'primary' : ''}`} style={{ padding: '3px 6px' }}
-                        onClick={() => patch(i, 'apply', !it.apply)}>{it.apply ? '적용' : '해제'}</button>
+                        onClick={() => patch(i, 'apply', !it.apply)} disabled={isCommon}>{it.apply ? '적용' : '해제'}</button>
                     </td>
-                    <td className="c"><input type="checkbox" checked={it.done} onChange={(e) => patch(i, 'done', e.target.checked)} style={{ width: 15, height: 15 }} /></td>
-                    <td><MajorSelect value={it.major} onChange={(v) => patch(i, 'major', v)} /></td>
-                    <td><MinorSelect major={it.major} value={it.minor} onChange={(v) => patch(i, 'minor', v)} /></td>
-                    <td><AmountInput value={it.total} onChange={(v) => patch(i, 'total', v)} /></td>
-                    <td><PaymentSelect value={it.payment} onChange={(v) => patch(i, 'payment', v)} /></td>
-                    <td><input className="input" placeholder="2026.1" value={it.startYM} onChange={(e) => patch(i, 'startYM', e.target.value)} /></td>
-                    <td className="c"><input className="input" style={{ width: 36, textAlign: 'center' }} type="number" min="1" max="31" value={it.payday} onChange={(e) => patch(i, 'payday', e.target.value)} /></td>
-                    <td><HolidaySelect value={it.holiday} onChange={(v) => patch(i, 'holiday', v)} /></td>
-                    <td className="c"><input className="input" style={{ width: 36, textAlign: 'center' }} type="number" min="1" value={it.months} onChange={(e) => patch(i, 'months', e.target.value)} /></td>
-                    <td className="c"><input className="input" style={{ width: 40, textAlign: 'center' }} value={it.rate} onChange={(e) => patch(i, 'rate', e.target.value)} placeholder="0" /></td>
-                    <td className="c"><input className="input" style={{ width: 40, textAlign: 'center' }} type="number" min="0" value={it.partialFree} onChange={(e) => patch(i, 'partialFree', e.target.value)} placeholder="0" /></td>
-                    <td><input className="input" value={it.detail} onChange={(e) => patch(i, 'detail', e.target.value)} placeholder="예: PT" /></td>
-                    <td><input className="input" value={it.memo} onChange={(e) => patch(i, 'memo', e.target.value)} /></td>
+                    <td className="c"><input type="checkbox" checked={it.done} onChange={(e) => patch(i, 'done', e.target.checked)} style={{ width: 15, height: 15 }} disabled={isCommon} /></td>
+                    <td><MajorSelect value={it.major} onChange={(v) => patch(i, 'major', v)} disabled={isCommon} /></td>
+                    <td><MinorSelect major={it.major} value={it.minor} onChange={(v) => patch(i, 'minor', v)} disabled={isCommon} /></td>
+                    <td><AmountInput value={it.total} onChange={(v) => patch(i, 'total', v)} disabled={isCommon} /></td>
+                    <td><PaymentSelect value={it.payment} onChange={(v) => patch(i, 'payment', v)} disabled={isCommon} /></td>
+                    <td><input className="input" placeholder="2026.1" value={it.startYM} onChange={(e) => patch(i, 'startYM', e.target.value)} disabled={isCommon} /></td>
+                    <td className="c"><input className="input" style={{ width: 36, textAlign: 'center' }} type="number" min="1" max="31" value={it.payday} onChange={(e) => patch(i, 'payday', e.target.value)} disabled={isCommon} /></td>
+                    <td><HolidaySelect value={it.holiday} onChange={(v) => patch(i, 'holiday', v)} disabled={isCommon} /></td>
+                    <td className="c"><input className="input" style={{ width: 36, textAlign: 'center' }} type="number" min="1" value={it.months} onChange={(e) => patch(i, 'months', e.target.value)} disabled={isCommon} /></td>
+                    <td className="c"><input className="input" style={{ width: 40, textAlign: 'center' }} value={it.rate} onChange={(e) => patch(i, 'rate', e.target.value)} placeholder="0" disabled={isCommon} /></td>
+                    <td className="c"><input className="input" style={{ width: 40, textAlign: 'center' }} type="number" min="0" value={it.partialFree} onChange={(e) => patch(i, 'partialFree', e.target.value)} placeholder="0" disabled={isCommon} /></td>
+                    <td><input className="input" value={it.detail} onChange={(e) => patch(i, 'detail', e.target.value)} placeholder="예: PT" disabled={isCommon} /></td>
+                    <td><input className="input" value={it.memo} onChange={(e) => patch(i, 'memo', e.target.value)} disabled={isCommon} /></td>
                     <td className="num" style={{ fontSize: 11.5 }}>
                       {amounts.length
                         ? <><b>{it.months}회</b> · {won(per)}/회{occThisYear.length ? <div className="helper">{year}년 {occThisYear.length}회 반영</div> : <div className="helper">{year}년 해당 없음</div>}</>
@@ -95,8 +95,8 @@ export default function Installment() {
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: 2 }}>
-                        <button className="btn ghost sm" style={{ padding: '3px 5px' }} onClick={() => reset(i)} title="행 초기화"><IconUndo size={13} /></button>
-                        <button className="btn ghost sm danger" style={{ padding: '3px 5px' }} onClick={() => remove(i)}><IconTrash size={13} /></button>
+                        <button className="btn ghost sm" style={{ padding: '3px 5px' }} onClick={() => reset(i)} title="행 초기화" disabled={isCommon}><IconUndo size={13} /></button>
+                        <button className="btn ghost sm danger" style={{ padding: '3px 5px' }} onClick={() => remove(i)} disabled={isCommon}><IconTrash size={13} /></button>
                       </div>
                     </td>
                   </tr>
