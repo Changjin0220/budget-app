@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useApp } from '../data/store'
-import { Card, MonthPicker, Modal } from '../components/ui'
+import { Card, MonthPicker, Modal, useConfirm } from '../components/ui'
 import { MajorSelect, MinorSelect, PaymentSelect, AmountInput } from '../components/fields'
 import { DonutChart, BarV, DailyLine } from '../components/charts'
 import {
@@ -43,6 +43,7 @@ function SummaryRow({ label, value, strong, color, hi }) {
 
 export default function Monthly() {
   const { state, mutate, showToast } = useApp()
+  const [confirm, confirmDialog] = useConfirm()
   const [m, setM] = useState(() => new Date().getMonth() + 1)
   const year = state.settings.year
   const dim = daysInMonth(year, m)
@@ -81,16 +82,17 @@ export default function Monthly() {
   const filteredTotal = filtered.reduce((a, r) => a + (Number(r.amount) || 0), 0)
 
   // 행 조작
-  const add = () => mutate((d) => d.monthly[m].rows.push(newRow()))
+  const add = () => mutate((d) => d.monthly[m].rows.unshift(newRow()))
   const patch = (id, key, v) => mutate((d) => {
     const row = d.monthly[m].rows.find((r) => r.id === id)
     if (!row) return
     row[key] = v
     if (key === 'major') { row.minor = ''; row.kind = kindOf(d.settings, v) }
   })
-  const remove = (id) => mutate((d) => {
-    d.monthly[m].rows = d.monthly[m].rows.filter((r) => r.id !== id)
-  })
+  const remove = async (id) => {
+    if (!(await confirm('이 내역을 삭제할까요?'))) return
+    mutate((d) => { d.monthly[m].rows = d.monthly[m].rows.filter((r) => r.id !== id) })
+  }
   const sortByDate = () => mutate((d) => {
     d.monthly[m].rows.sort((a, b) => (Number(a.day) || 0) - (Number(b.day) || 0))
     showToast('날짜순으로 정렬했어요')
@@ -400,6 +402,8 @@ export default function Monthly() {
           </Modal>
         )
       })()}
+
+      {confirmDialog}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { useApp } from '../data/store'
-import { Card } from '../components/ui'
+import { Card, useConfirm } from '../components/ui'
 import { MajorSelect, MinorSelect, PaymentSelect, HolidaySelect, AmountInput } from '../components/fields'
 import { newInstallment, installmentOccurrences, monthlyAmounts } from '../data/installments'
 import { won, num } from '../utils/format'
@@ -9,13 +9,17 @@ export default function Installment() {
   const { state, mutate, showToast } = useApp()
   const rows = state.installments
   const year = state.settings.year
+  const [confirm, confirmDialog] = useConfirm()
 
   const add = () => mutate((d) => d.installments.push(newInstallment()))
   const patch = (i, key, v) => mutate((d) => {
     d.installments[i][key] = v
     if (key === 'major') d.installments[i].minor = ''
   })
-  const remove = (i) => mutate((d) => d.installments.splice(i, 1))
+  const remove = async (i) => {
+    if (!(await confirm('이 할부 내역을 삭제할까요?'))) return
+    mutate((d) => d.installments.splice(i, 1))
+  }
   const reset = (i) => mutate((d) => {
     const id = d.installments[i].id
     d.installments[i] = { ...newInstallment(), id }
@@ -118,6 +122,8 @@ export default function Installment() {
           상환일이 주말/공휴일이면 그 이후 첫 영업일에 반영. 월간내역 비고에 <b>(1/2회)</b>, <b>(2/2회)</b> 처럼 납부회차가 자동 표시돼요.
         </p>
       </Card>
+
+      {confirmDialog}
     </div>
   )
 }

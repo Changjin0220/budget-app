@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../data/store'
-import { Card } from '../components/ui'
+import { Card, useConfirm } from '../components/ui'
 import { uid } from '../utils/id'
 import { won, parseNum } from '../utils/format'
 import { exportProfile, importProfile } from '../data/storage'
@@ -28,6 +28,7 @@ function EditableChip({ value, onChange, onRemove }) {
 
 function CategorySection({ sectionKey }) {
   const { state, mutate } = useApp()
+  const [confirm, confirmDialog] = useConfirm()
   const meta = SECTION_META[sectionKey]
   const groups = state.settings[sectionKey]
 
@@ -35,10 +36,16 @@ function CategorySection({ sectionKey }) {
     d.settings[sectionKey].push({ id: uid('g'), name: '새 대분류', subs: [] })
   })
   const renameGroup = (gi, name) => mutate((d) => { d.settings[sectionKey][gi].name = name })
-  const removeGroup = (gi) => mutate((d) => { d.settings[sectionKey].splice(gi, 1) })
+  const removeGroup = async (gi) => {
+    if (!(await confirm(`"${groups[gi].name}" 대분류를 삭제할까요? 이미 입력된 내역의 분류명은 그대로 남아있어요.`))) return
+    mutate((d) => { d.settings[sectionKey].splice(gi, 1) })
+  }
   const addSub = (gi) => mutate((d) => { d.settings[sectionKey][gi].subs.push({ id: uid('s'), name: '새 항목' }) })
   const renameSub = (gi, si, name) => mutate((d) => { d.settings[sectionKey][gi].subs[si].name = name })
-  const removeSub = (gi, si) => mutate((d) => { d.settings[sectionKey][gi].subs.splice(si, 1) })
+  const removeSub = async (gi, si) => {
+    if (!(await confirm(`"${groups[gi].subs[si].name}" 소분류를 삭제할까요?`))) return
+    mutate((d) => { d.settings[sectionKey][gi].subs.splice(si, 1) })
+  }
 
   return (
     <Card title={`${meta.label} 분류`} dot={meta.color}
@@ -63,13 +70,19 @@ function CategorySection({ sectionKey }) {
           </div>
         ))}
       </div>
+      {confirmDialog}
     </Card>
   )
 }
 
 function PaymentsCard() {
   const { state, mutate } = useApp()
+  const [confirm, confirmDialog] = useConfirm()
   const pays = state.settings.payments
+  const removePayment = async (i) => {
+    if (!(await confirm(`"${pays[i]}" 결제수단을 삭제할까요?`))) return
+    mutate((d) => { d.settings.payments.splice(i, 1) })
+  }
   return (
     <Card title="결제수단" dot="#a5c8f0"
       right={<button className="chip-btn" onClick={() => mutate((d) => d.settings.payments.push('새 결제수단'))}>＋ 추가</button>}>
@@ -77,9 +90,10 @@ function PaymentsCard() {
         {pays.map((p, i) => (
           <EditableChip key={i} value={p}
             onChange={(v) => mutate((d) => { d.settings.payments[i] = v })}
-            onRemove={() => mutate((d) => { d.settings.payments.splice(i, 1) })} />
+            onRemove={() => removePayment(i)} />
         ))}
       </div>
+      {confirmDialog}
     </Card>
   )
 }

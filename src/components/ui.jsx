@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { MONTHS } from '../utils/format'
 import { IconClose, IconCalendar } from './icons'
 
@@ -63,9 +63,31 @@ export function Confirm({ msg, onOk, onCancel }) {
     <Modal title="확인" onClose={onCancel}
       footer={<>
         <button className="btn" onClick={onCancel}>취소</button>
-        <button className="btn danger primary" style={{ background: 'var(--minus)', borderColor: 'var(--minus)' }} onClick={onOk}>삭제</button>
+        <button className="btn primary" style={{ background: 'var(--minus)', borderColor: 'var(--minus)', color: '#fff' }} onClick={onOk}>삭제</button>
       </>}>
       <p style={{ margin: 0 }}>{msg}</p>
     </Modal>
   )
+}
+
+// 삭제 등 되돌릴 수 없는 동작 전에 한 번 더 확인받는 훅
+// const [confirm, confirmDialog] = useConfirm()
+// const remove = async (id) => { if (!(await confirm('정말 삭제할까요?'))) return; ... }
+// return <div>...{confirmDialog}</div>
+export function useConfirm() {
+  const [pending, setPending] = useState(null) // { msg, resolve }
+
+  const confirm = useCallback((msg = '정말 삭제할까요? 되돌릴 수 없어요.') => (
+    new Promise((resolve) => setPending({ msg, resolve }))
+  ), [])
+
+  const dialog = pending ? (
+    <Confirm
+      msg={pending.msg}
+      onOk={() => { pending.resolve(true); setPending(null) }}
+      onCancel={() => { pending.resolve(false); setPending(null) }}
+    />
+  ) : null
+
+  return [confirm, dialog]
 }

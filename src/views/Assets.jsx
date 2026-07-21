@@ -1,6 +1,6 @@
 import { useMemo, useState, Fragment } from 'react'
 import { useApp } from '../data/store'
-import { Card } from '../components/ui'
+import { Card, useConfirm } from '../components/ui'
 import { AssetBar, MiniTrend, StackedComposition } from '../components/charts'
 import { won, num, MONTHS } from '../utils/format'
 import { uid } from '../utils/id'
@@ -18,6 +18,7 @@ const TYPE_TONE = {
 
 export default function Assets() {
   const { state, mutate, showToast } = useApp()
+  const [confirm, confirmDialog] = useConfirm()
   const groups = state.assets.groups
   const loans = state.loans || []
   const [loanModal, setLoanModal] = useState(null) // null | 'new' | loan object
@@ -33,7 +34,10 @@ export default function Assets() {
     showToast('대출을 저장하고 반영했어요')
     setLoanModal(null)
   }
-  const removeLoan = (id) => mutate((d) => { d.loans = d.loans.filter((x) => x.id !== id) })
+  const removeLoan = async (id) => {
+    if (!(await confirm('이 대출을 삭제할까요? 이미 불러온 월간내역·고정내역 항목은 남아있어요.'))) return
+    mutate((d) => { d.loans = d.loans.filter((x) => x.id !== id) })
+  }
 
   const monthlySum = (type) => MONTHS.map((_, i) => {
     const g = groups.find((x) => x.type === type)
@@ -59,7 +63,10 @@ export default function Assets() {
   const setVal = (gi, ri, mi, v) => mutate((d) => { d.assets.groups[gi].rows[ri].values[mi] = v })
   const setName = (gi, ri, v) => mutate((d) => { d.assets.groups[gi].rows[ri].name = v })
   const addRow = (gi) => mutate((d) => d.assets.groups[gi].rows.push({ id: uid('a'), name: '새 항목', values: Array(12).fill('') }))
-  const rmRow = (gi, ri) => mutate((d) => d.assets.groups[gi].rows.splice(ri, 1))
+  const rmRow = async (gi, ri) => {
+    if (!(await confirm('이 자산 항목을 삭제할까요?'))) return
+    mutate((d) => d.assets.groups[gi].rows.splice(ri, 1))
+  }
 
   return (
     <div className="grid">
@@ -157,6 +164,8 @@ export default function Assets() {
           onClose={() => setLoanModal(null)}
         />
       )}
+
+      {confirmDialog}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState, Fragment } from 'react'
 import { useApp } from '../data/store'
-import { Card } from '../components/ui'
+import { Card, useConfirm } from '../components/ui'
 import { MajorSelect, MinorSelect, PaymentSelect, HolidaySelect, AmountInput, kindTag } from '../components/fields'
 import { kindOf } from '../data/selectors'
 import { uid } from '../utils/id'
@@ -120,13 +120,17 @@ export default function Fixed() {
   const { state, mutate } = useApp()
   const rows = state.fixed
   const loans = state.loans || []
+  const [confirm, confirmDialog] = useConfirm()
 
   const add = () => mutate((d) => d.fixed.push(newRow()))
   const patch = (i, key, v) => mutate((d) => {
     d.fixed[i][key] = v
     if (key === 'major') d.fixed[i].minor = '' // 대분류 바뀌면 소분류 초기화
   })
-  const remove = (i) => mutate((d) => d.fixed.splice(i, 1))
+  const remove = async (i) => {
+    if (!(await confirm('이 고정내역을 삭제할까요?'))) return
+    mutate((d) => d.fixed.splice(i, 1))
+  }
   const sortByDate = () => mutate((d) => {
     const rank = (r) => (r.day === '말일' ? 32 : parseInt(r.day, 10) || 99)
     d.fixed.sort((a, b) => rank(a) - rank(b))
@@ -215,6 +219,8 @@ export default function Fixed() {
         </ul>
         <div className="helper" style={{ marginTop: 8 }}>한국 공휴일(설·추석 포함)과 주말을 기준으로 계산합니다.</div>
       </Card>
+
+      {confirmDialog}
     </div>
   )
 }
