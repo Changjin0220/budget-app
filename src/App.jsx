@@ -8,6 +8,7 @@ import Annual from './views/Annual'
 import Fixed from './views/Fixed'
 import Installment from './views/Installment'
 import Assets from './views/Assets'
+import Study from './views/Study'
 import Settings from './views/Settings'
 import { RemindersBell } from './components/Reminders'
 import { IconCloud, IconSwap, IconSave, IconMenu } from './components/icons'
@@ -19,12 +20,13 @@ const NAV = [
   { id: 'fixed', label: '고정내역', crumb: '매달 반복되는 항목' },
   { id: 'installment', label: '할부', crumb: '카드 할부 관리' },
   { id: 'assets', label: '자산', crumb: '순자산 흐름' },
+  { id: 'study', label: '투자공부', crumb: '나만의 투자 공부 기록' },
   { id: 'settings', label: '설정', crumb: '분류 · 결제수단 · 목표' },
 ]
 
 const VIEWS = {
   dashboard: Dashboard, monthly: Monthly, annual: Annual,
-  fixed: Fixed, installment: Installment, assets: Assets, settings: Settings,
+  fixed: Fixed, installment: Installment, assets: Assets, study: Study, settings: Settings,
 }
 
 function SyncBadge() {

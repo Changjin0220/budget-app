@@ -65,6 +65,7 @@ export function defaultState(year = 2026) {
     installments: [],
     loans: [],
     assets: defaultAssets(),
+    posts: [],
   }
 }
 

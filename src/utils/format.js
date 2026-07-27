@@ -34,6 +34,22 @@ export function parseNum(str) {
   return Number.isNaN(v) ? '' : v
 }
 
+// 타임스탬프 → "2026.07.26" 형태
+export function fmtDate(ts) {
+  if (!ts) return ''
+  const d = new Date(ts)
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}`
+}
+
+// 타임스탬프 → "2026.07.26 14:32" 형태
+export function fmtDateTime(ts) {
+  if (!ts) return ''
+  const d = new Date(ts)
+  const p = (n) => String(n).padStart(2, '0')
+  return `${fmtDate(ts)} ${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
 export const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 export const MONTH_EN = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December']

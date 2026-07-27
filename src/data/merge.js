@@ -69,5 +69,6 @@ export function mergeStates(stateA, ownerA, stateB, ownerB) {
     installments: [...tag(stateA.installments, ownerA), ...tag(stateB.installments, ownerB)],
     loans: [...tag(stateA.loans, ownerA), ...tag(stateB.loans, ownerB)],
     assets: mergeAssets(stateA.assets, stateB.assets, ownerA, ownerB),
+    posts: [...tag(stateA.posts, ownerA), ...tag(stateB.posts, ownerB)],
   }
 }

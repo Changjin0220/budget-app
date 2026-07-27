@@ -24,6 +24,7 @@ function ensureShape(s) {
   if (!out.installments) out.installments = []
   if (!out.loans) out.loans = []
   if (!out.assets) out.assets = defaultAssets()
+  if (!out.posts) out.posts = []
   return out
 }
 
