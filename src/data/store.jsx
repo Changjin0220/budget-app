@@ -6,7 +6,7 @@ import {
 import {
   loadSyncConfig, saveSyncConfig, cloudEnabled, cloudLoad, cloudSave, cloudTest,
 } from './cloud'
-import { mergeStates } from './merge'
+import { mergeStates, syncCategoryLists } from './merge'
 
 const Ctx = createContext(null)
 
@@ -31,6 +31,29 @@ export function ensureShape(s) {
 function loadCommonMerged() {
   const [idA, idB] = PROFILES.map((p) => p.id)
   return mergeStates(ensureShape(loadState(idA)), idA, ensureShape(loadState(idB)), idB)
+}
+
+function catFingerprint(s) {
+  return JSON.stringify({ income: s.income, saving: s.saving, expense: s.expense, payments: s.payments })
+}
+
+// 배우자 프로필과 카테고리/결제수단을 합쳐서(누락분만 서로 채움) 상대쪽 저장(+가능하면 클라우드 push)까지 처리하고, 합쳐진 결과를 반환
+function syncCategoriesWithSpouse(profileId, mySettings, cloudCfg) {
+  const other = PROFILES.find((p) => p.id !== profileId)
+  if (!other) return mySettings
+  const otherState = ensureShape(loadState(other.id))
+  const merged = syncCategoryLists(mySettings, otherState.settings)
+  if (catFingerprint(merged) !== catFingerprint(otherState.settings)) {
+    otherState.settings.income = merged.income
+    otherState.settings.saving = merged.saving
+    otherState.settings.expense = merged.expense
+    otherState.settings.payments = merged.payments
+    saveState(other.id, otherState)
+    if (cloudEnabled(cloudCfg)) {
+      cloudSave(cloudCfg, other.id, otherState, Date.now()).catch(() => {})
+    }
+  }
+  return merged
 }
 
 export function AppProvider({ children }) {
@@ -73,7 +96,19 @@ export function AppProvider({ children }) {
     const localTs = getLocalTs(p) || 0
     versionRef.current = localTs
     dirtyRef.current = false
-    setState(ensureShape(loadState(p)))
+
+    // 로그인할 때마다 배우자 프로필과 카테고리/결제수단 차이를 자동으로 한 번 맞춰줌(그동안 쌓인 차이 포함)
+    const mine = ensureShape(loadState(p))
+    const merged = syncCategoriesWithSpouse(p, mine.settings, cfgRef.current)
+    if (catFingerprint(merged) !== catFingerprint(mine.settings)) {
+      mine.settings.income = merged.income
+      mine.settings.saving = merged.saving
+      mine.settings.expense = merged.expense
+      mine.settings.payments = merged.payments
+      saveState(p, mine)
+    }
+    lastSyncedCatsRef.current = catFingerprint(mine.settings)
+    setState(mine)
 
     const cfg = cfgRef.current
     if (!cloudEnabled(cfg)) { setSyncStatus('idle'); return }
@@ -217,6 +252,38 @@ export function AppProvider({ children }) {
       return draft
     })
   }, [isCommon, showToast])
+
+  // 대분류/소분류/결제수단이 바뀌면 잠시(편집이 잦아들 때까지) 기다렸다가 배우자 프로필에도 자동으로 맞춰서 저장.
+  // 디바운스하는 이유: "+ 소분류" 클릭(임시 이름 "새 항목") 직후 바로 이름을 입력하는 흐름이 각각 별도 변경으로 잡히는데,
+  // 즉시 동기화하면 임시 이름이 배우자 쪽에 먼저 저장되어 나중에 실제 이름과 함께 중복으로 남는 문제가 있었음.
+  const lastSyncedCatsRef = useRef(null)
+  const catSyncTimer = useRef(null)
+  // 프로필이 바뀌면(전환) 이전 프로필 기준값을 들고 있지 않도록 초기화
+  useEffect(() => { lastSyncedCatsRef.current = null }, [profile])
+  useEffect(() => {
+    if (!profile || isCommon || !state) return
+    const fp = catFingerprint(state.settings)
+    if (lastSyncedCatsRef.current === null) { lastSyncedCatsRef.current = fp; return }
+    if (fp === lastSyncedCatsRef.current) return
+    if (catSyncTimer.current) clearTimeout(catSyncTimer.current)
+    catSyncTimer.current = setTimeout(() => {
+      const merged = syncCategoriesWithSpouse(profile, state.settings, cfgRef.current)
+      lastSyncedCatsRef.current = catFingerprint(merged)
+
+      if (catFingerprint(merged) !== fp) {
+        setState((prev) => {
+          const draft = structuredClone(prev)
+          draft.settings.income = merged.income
+          draft.settings.saving = merged.saving
+          draft.settings.expense = merged.expense
+          draft.settings.payments = merged.payments
+          return draft
+        })
+        dirtyRef.current = true
+      }
+    }, 900)
+    return () => catSyncTimer.current && clearTimeout(catSyncTimer.current)
+  }, [profile, isCommon, state])
 
   const replaceState = useCallback((next) => {
     if (isCommon) return

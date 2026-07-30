@@ -123,11 +123,10 @@ function SyncCategoriesCard() {
   return (
     <Card title="배우자와 카테고리 맞추기" dot="#f2a98f">
       <p className="helper" style={{ marginTop: 0 }}>
-        창진·효연은 프로필이 서로 분리돼 있어서, 한쪽에서만 대분류/소분류나 결제수단을 추가하면 다른 쪽에는 없을 수 있어요.
-        아래 버튼을 누르면 <b>{other.name}</b>에게 있고 나에게 없는 항목만 가져와서 채워줘요 (내 목록을 지우거나 덮어쓰지 않아요).
-        완전히 똑같이 맞추려면 {other.name} 프로필에서도 한 번 눌러주세요.
+        이제 대분류/소분류나 결제수단을 추가·삭제·수정할 때마다 <b>{other.name}</b> 쪽에도 자동으로 맞춰져요(내 목록을 지우지 않는 안전한 합치기).
+        이 버튼은 이 기능이 생기기 전부터 있던 예전 차이를 한 번에 맞출 때만 쓰면 돼요.
       </p>
-      <button className="btn primary" onClick={syncFromOther}><IconRefresh size={14} />{other.name}의 목록 가져와 합치기</button>
+      <button className="btn primary" onClick={syncFromOther}><IconRefresh size={14} />{other.name}의 목록 지금 한 번 가져와 합치기</button>
     </Card>
   )
 }
