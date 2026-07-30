@@ -5,7 +5,7 @@ function tag(list, owner) {
   return (list || []).map((r) => ({ ...r, _owner: owner }))
 }
 
-function mergeCategoryGroups(groupsA, groupsB) {
+export function mergeCategoryGroups(groupsA, groupsB) {
   const out = (groupsA || []).map((g) => ({ ...g, subs: [...g.subs] }))
   for (const gb of (groupsB || [])) {
     const match = out.find((g) => g.name === gb.name)
@@ -18,6 +18,17 @@ function mergeCategoryGroups(groupsA, groupsB) {
     }
   }
   return out
+}
+
+// 두 프로필의 대분류/소분류·결제수단 목록을 합쳐서(누락된 것만 서로 채워서) 반환.
+// 기존 값은 그대로 두고 상대쪽에 있는데 내게 없는 항목만 추가하는 방식이라 안전함(덮어쓰기 아님).
+export function syncCategoryLists(settingsA, settingsB) {
+  return {
+    income: mergeCategoryGroups(settingsA.income, settingsB.income),
+    saving: mergeCategoryGroups(settingsA.saving, settingsB.saving),
+    expense: mergeCategoryGroups(settingsA.expense, settingsB.expense),
+    payments: Array.from(new Set([...(settingsA.payments || []), ...(settingsB.payments || [])])),
+  }
 }
 
 function mergeSettings(a, b) {

@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { useApp } from '../data/store'
+import { useApp, ensureShape } from '../data/store'
 import { Card, useConfirm } from '../components/ui'
 import { uid } from '../utils/id'
 import { won, parseNum } from '../utils/format'
-import { exportProfile, importProfile } from '../data/storage'
+import { exportProfile, importProfile, loadState } from '../data/storage'
+import { PROFILES } from '../data/defaults'
+import { syncCategoryLists } from '../data/merge'
 import { IconClose, IconTrash, IconCloud, IconDownload, IconUpload, IconRefresh } from '../components/icons'
 
 const SECTION_META = {
@@ -94,6 +96,38 @@ function PaymentsCard() {
         ))}
       </div>
       {confirmDialog}
+    </Card>
+  )
+}
+
+function SyncCategoriesCard() {
+  const { profile, isCommon, mutate, showToast } = useApp()
+  if (isCommon) return null
+  const other = PROFILES.find((p) => p.id !== profile)
+  if (!other) return null
+
+  const syncFromOther = () => {
+    const raw = loadState(other.id)
+    if (!raw) { showToast(`${other.name} 프로필에는 아직 데이터가 없어요`); return }
+    const otherSettings = ensureShape(raw).settings
+    mutate((d) => {
+      const synced = syncCategoryLists(d.settings, otherSettings)
+      d.settings.income = synced.income
+      d.settings.saving = synced.saving
+      d.settings.expense = synced.expense
+      d.settings.payments = synced.payments
+    })
+    showToast(`${other.name}의 카테고리·결제수단을 가져와 합쳤어요`)
+  }
+
+  return (
+    <Card title="배우자와 카테고리 맞추기" dot="#f2a98f">
+      <p className="helper" style={{ marginTop: 0 }}>
+        창진·효연은 프로필이 서로 분리돼 있어서, 한쪽에서만 대분류/소분류나 결제수단을 추가하면 다른 쪽에는 없을 수 있어요.
+        아래 버튼을 누르면 <b>{other.name}</b>에게 있고 나에게 없는 항목만 가져와서 채워줘요 (내 목록을 지우거나 덮어쓰지 않아요).
+        완전히 똑같이 맞추려면 {other.name} 프로필에서도 한 번 눌러주세요.
+      </p>
+      <button className="btn primary" onClick={syncFromOther}><IconRefresh size={14} />{other.name}의 목록 가져와 합치기</button>
     </Card>
   )
 }
@@ -224,6 +258,7 @@ export default function Settings() {
       <CategorySection sectionKey="saving" />
       <CategorySection sectionKey="expense" />
       <PaymentsCard />
+      <SyncCategoriesCard />
       <SyncCard />
 
       <Card title="데이터 백업 / 복원" dot="#f2a98f">

@@ -11,7 +11,7 @@ import { mergeStates } from './merge'
 const Ctx = createContext(null)
 
 // 저장된 상태에 누락 키 보정 (버전 업 시 안전)
-function ensureShape(s) {
+export function ensureShape(s) {
   const base = defaultState()
   const out = { ...base, ...(s || {}) }
   out.settings = { ...defaultSettings(out.settings?.year || 2026), ...(s?.settings || {}) }
