@@ -13,6 +13,7 @@ import { loanOccurrences } from '../data/loans'
 import { uid } from '../utils/id'
 import { PALETTE } from '../data/defaults'
 import { compressImage } from '../utils/image'
+import InboxPanel from '../components/InboxPanel'
 import {
   IconDownload, IconUndo, IconSort, IconSearch, IconClose, IconPaperclip,
   IconTrash, IconReceipt,
@@ -300,6 +301,9 @@ export default function Monthly() {
 
       {/* 카테고리 목표/예산 대비 */}
       <BudgetTables m={m} rows={rows} prevRows={prevRows} budgets={expenseBudgets} setBudget={setBudget} />
+
+      {/* 문자 자동 수집 (아이폰 단축어 → Supabase inbox) */}
+      <InboxPanel />
 
       {/* 데일리 내역 */}
       <Card>
