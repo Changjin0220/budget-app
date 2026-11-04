@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { INBOX_SQL } from '../data/inbox'
 import { useApp, ensureShape } from '../data/store'
 import { Card, useConfirm } from '../components/ui'
 import { uid } from '../utils/id'
@@ -176,6 +177,9 @@ create policy "app all" on budgets
           </li>
           <li><b>Project Settings → API</b>에서 <b>Project URL</b>과 <b>anon public key</b> 복사 → 아래 입력 → <b>연결 테스트</b> → <b>켜기</b></li>
           <li>배우자 기기에서도 같은 URL·key 입력 후 켜면 끝!</li>
+          <li><b>(선택) 카드 문자 자동 수집</b>: SQL Editor에서 아래도 실행하면, 아이폰 단축어가 보낸 승인 문자가 월간내역의 &lsquo;문자 자동 수집&rsquo;에 떠요. 단축어 설정법은 저장소의 <code>docs/iphone-shortcut.md</code> 참고.
+            <pre style={{ whiteSpace: 'pre-wrap', background: '#fff', border: '1px solid var(--line)', borderRadius: 8, padding: 8, marginTop: 4 }}>{INBOX_SQL}</pre>
+          </li>
         </ol>
       )}
       <div style={{ display: 'grid', gap: 12, marginTop: 6 }}>
