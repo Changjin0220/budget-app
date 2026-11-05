@@ -8,6 +8,7 @@ import { parseNum } from '../utils/format'
 import { IconTrash } from '../components/icons'
 import { LoanModal, LoanList } from '../components/LoanModal'
 import { ensureLoanCategories } from '../data/loans'
+import PortfolioCard from '../components/PortfolioCard'
 
 const TYPE_TONE = {
   비유동자산: { bg: 'var(--gold-100)', color: '#c9a94c' },
@@ -79,6 +80,8 @@ export default function Assets() {
         <Card title="부채 추이" dot="#b3a4e0"><MiniTrend data={trend(debt)} color="#b3a4e0" /></Card>
         <Card title="자산 구성" dot="#8b7ad6"><StackedComposition data={composition} height={180} /></Card>
       </div>
+
+      <PortfolioCard />
 
       {/* 자산 입력 매트릭스 */}
       <Card title="월별 자산 입력" dot="#8b7ad6" right={
