@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useApp } from './data/store'
 import { ALL_PROFILES, PROFILES } from './data/defaults'
 import ProfileGate from './components/ProfileGate'
+import Calendar from './views/Calendar'
 import Dashboard from './views/Dashboard'
 import Monthly from './views/Monthly'
 import Annual from './views/Annual'
@@ -14,6 +15,7 @@ import { RemindersBell } from './components/Reminders'
 import { IconCloud, IconSwap, IconSave, IconMenu } from './components/icons'
 
 const NAV = [
+  { id: 'calendar', label: '캘린더', crumb: '일자별 수입·지출 · 공유 일정' },
   { id: 'dashboard', label: '대시보드', crumb: '한눈에 보는 이번 달' },
   { id: 'monthly', label: '월간내역', crumb: '데일리 내역 · 예산' },
   { id: 'annual', label: '연간', crumb: '1년 흐름 & 집계' },
@@ -25,6 +27,7 @@ const NAV = [
 ]
 
 const VIEWS = {
+  calendar: Calendar,
   dashboard: Dashboard, monthly: Monthly, annual: Annual,
   fixed: Fixed, installment: Installment, assets: Assets, study: Study, settings: Settings,
 }
@@ -45,7 +48,7 @@ function SyncBadge() {
 
 export default function App() {
   const { profile, isCommon, state, setProfile } = useApp()
-  const [view, setView] = useState('dashboard')
+  const [view, setView] = useState('calendar')
   const [menuOpen, setMenuOpen] = useState(false)
 
   if (!profile || !state) return <ProfileGate />
