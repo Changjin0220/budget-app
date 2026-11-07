@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useApp } from '../data/store'
-import { cloudEnabled } from '../data/cloud'
+import { cloudEnabled, cloudLoad } from '../data/cloud'
+import { loadState } from '../data/storage'
 import { notesFetch, notesAdd, notesDelete } from '../data/calendarNotes'
-import { PROFILES } from '../data/defaults'
+import { PROFILES, COMMON_ID } from '../data/defaults'
 import { Card } from '../components/ui'
 import { daysInMonth, isHoliday } from '../utils/holidays'
 import { num } from '../utils/format'
@@ -35,8 +36,34 @@ export default function Calendar() {
 
   useEffect(() => { if (sel > dim) setSel(dim) }, [dim, sel])
 
+  // ---- 누구 기준으로 볼지 (창진 / 효연 / 공통) ----
+  // 로그인한 프로필과 상관없이 캘린더에서만 전환. 상대방 데이터는 읽기만 함(저장 안 함).
+  const [who, setWho] = useState(() => (isCommon ? COMMON_ID : profile))
+  const other = isCommon ? null : PROFILES.find((p) => p.id !== profile)?.id
+  const [otherMonthly, setOtherMonthly] = useState(null)
+  const loadOther = useCallback(async () => {
+    if (!other) return
+    let s = loadState(other)
+    if (cloudEnabled(syncConfig)) {
+      try { const r = await cloudLoad(syncConfig, other); if (r?.state) s = r.state } catch { /* 로컬 사본으로 */ }
+    }
+    setOtherMonthly(s?.monthly || {})
+  }, [other, syncConfig])
+  useEffect(() => { if (who !== profile) loadOther() }, [who, profile, loadOther])
+
   // ---- 수입/지출 집계 ----
-  const rows = state.monthly[m]?.rows || []
+  const rows = useMemo(() => {
+    const tag = (list, owner) => (list || []).map((r) => ({ ...r, _owner: r._owner || owner }))
+    if (isCommon) {
+      const all = state.monthly[m]?.rows || []
+      return who === COMMON_ID ? all : all.filter((r) => r._owner === who)
+    }
+    const mine = tag(state.monthly[m]?.rows, profile)
+    const theirs = tag(otherMonthly?.[m]?.rows, other)
+    if (who === profile) return mine
+    if (who === other) return theirs
+    return [...mine, ...theirs]
+  }, [isCommon, who, state, m, profile, other, otherMonthly])
   const byDay = useMemo(() => {
     const map = {}
     for (const r of rows) {
@@ -129,8 +156,15 @@ export default function Calendar() {
           <div className="cal-sum">
             <span>수입 <b className="pos">{num(monthIn)}</b></span>
             <span>지출 <b className="neg">{num(monthOut)}</b></span>
-            <span className="helper">{isCommon ? '두 사람 합산' : `${profile} 내역 기준`}</span>
+            <div className="seg sm" style={{ marginLeft: 'auto' }}>
+              {[...PROFILES.map((p) => p.id), COMMON_ID].map((id) => (
+                <button key={id} className={who === id ? 'on' : ''} onClick={() => setWho(id)}>{id}</button>
+              ))}
+            </div>
           </div>
+        )}
+        {mode === 'money' && who !== COMMON_ID && who !== profile && !isCommon && otherMonthly === null && (
+          <div className="helper" style={{ margin: '4px 0' }}>{who} 내역 불러오는 중…</div>
         )}
         {mode === 'notes' && !on && (
           <div className="helper" style={{ margin: '8px 0' }}>일정 공유는 설정 → 클라우드 동기화를 켜야 사용할 수 있어요.</div>
