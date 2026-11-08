@@ -439,3 +439,17 @@ table.tbl td.c, table.tbl th.c { text-align: center; }
 .cal-notify .chip { border: 1px solid var(--lav-100); background: #fff; color: var(--ink-2); border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; }
 .cal-notify .chip.on { background: var(--lav-600); border-color: var(--lav-600); color: #fff; }
 .cal-notify .chip:disabled { opacity: .4; }
+.cal-notify .chip.alarm { display: inline-flex; padding: 0; overflow: hidden; }
+.cal-notify .chip.alarm button { border: none; background: none; color: inherit; font: inherit; padding: 4px 8px; }
+.cal-notify .chip.alarm button + button { padding-left: 2px; opacity: .8; }
+
+/* 알람식 휠 선택기 */
+.wheel-box { background: #fff; border: 1px solid var(--lav-100); border-radius: 12px; padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 8px; }
+.wheel-row { display: flex; justify-content: center; align-items: center; gap: 4px; }
+.wheel { position: relative; height: 180px; flex: none; }
+.wheel-scroll { height: 100%; overflow-y: auto; scroll-snap-type: y mandatory; scrollbar-width: none; -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent); mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent); }
+.wheel-scroll::-webkit-scrollbar { display: none; }
+.wheel-item { height: 36px; line-height: 36px; text-align: center; scroll-snap-align: center; font-size: 15px; color: var(--ink-3, #999); cursor: pointer; user-select: none; white-space: nowrap; }
+.wheel-item.on { color: var(--ink-1, #222); font-weight: 800; font-size: 17px; }
+.wheel-band { position: absolute; left: 0; right: 0; top: 72px; height: 36px; border-top: 1px solid var(--lav-100); border-bottom: 1px solid var(--lav-100); pointer-events: none; }
+.wheel-colon { font-weight: 800; font-size: 17px; }
