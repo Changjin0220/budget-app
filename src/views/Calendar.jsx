@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useApp } from '../data/store'
 import { cloudEnabled, cloudLoad } from '../data/cloud'
 import { loadState } from '../data/storage'
-import { notesFetch, notesAdd, notesDelete } from '../data/calendarNotes'
+import { notesFetch, notesAdd, notesDelete, notesUpdate } from '../data/calendarNotes'
+import NotifyEditor, { kstToIso, isoToKst, fmtAlarm } from '../components/NotifyEditor'
 import { PROFILES, COMMON_ID } from '../data/defaults'
 import { Card } from '../components/ui'
 import { daysInMonth, isHoliday } from '../utils/holidays'
@@ -83,6 +84,10 @@ export default function Calendar() {
   const [notes, setNotes] = useState([])
   const [notesErr, setNotesErr] = useState('')
   const [draft, setDraft] = useState('')
+  const [atTime, setAtTime] = useState('')
+  const [notify, setNotify] = useState({ to: [], alarms: [] })
+  const [editId, setEditId] = useState(null) // 알림 고치는 중인 일정
+  const [editVal, setEditVal] = useState({ to: [], alarms: [] })
   const [busy, setBusy] = useState(false)
 
   const loadNotes = useCallback(async () => {
@@ -118,10 +123,25 @@ export default function Calendar() {
     if (!text || busy) return
     setBusy(true)
     try {
-      const row = await notesAdd(syncConfig, { date: ymd(year, m, sel), text, author: isCommon ? '공통' : profile })
-      setNotes((xs) => [...xs, row]); setDraft('')
+      const row = await notesAdd(syncConfig, {
+        date: ymd(year, m, sel), text, author: isCommon ? '공통' : profile, atTime,
+        notifyTo: notify.to, remindAt: notify.alarms.map(kstToIso),
+      })
+      setNotes((xs) => [...xs, row]); setDraft(''); setAtTime(''); setNotify({ to: [], alarms: [] })
+      if (notify.to.length) showToast(`${notify.to.join('·')}에게 텔레그램으로 알렸어요`)
     } catch (e) { showToast('메모 저장 실패: ' + String(e.message || e).slice(0, 40)) }
     finally { setBusy(false) }
+  }
+  const startEdit = (n) => {
+    if (editId === n.id) { setEditId(null); return }
+    setEditId(n.id)
+    setEditVal({ to: n.notify_to || [], alarms: (n.remind_at || []).map(isoToKst).sort() })
+  }
+  const saveEdit = async (n) => {
+    try {
+      const row = await notesUpdate(syncConfig, n.id, { notify_to: editVal.to, remind_at: editVal.alarms.map(kstToIso) })
+      setNotes((xs) => xs.map((x) => (x.id === n.id ? row : x))); setEditId(null); showToast('알림을 저장했어요')
+    } catch (e) { showToast('알림 저장 실패: ' + String(e.message || e).slice(0, 40)) }
   }
   const delNote = async (id) => {
     try { await notesDelete(syncConfig, id); setNotes((xs) => xs.filter((x) => x.id !== id)) }
@@ -191,7 +211,7 @@ export default function Calendar() {
                   </>
                 )}
                 {mode === 'notes' && ns.slice(0, 2).map((n) => (
-                  <span key={n.id} className="cal-note" style={{ borderColor: authorColor(n.author) }}>{n.text}</span>
+                  <span key={n.id} className="cal-note" style={{ borderColor: authorColor(n.author) }}>{n.at_time ? n.at_time.slice(0, 5) + ' ' : ''}{n.text}</span>
                 ))}
                 {mode === 'notes' && ns.length > 2 && <span className="cal-more">+{ns.length - 2}</span>}
               </button>
@@ -224,22 +244,46 @@ export default function Calendar() {
             {selNotes.length === 0 && <div className="helper" style={{ marginBottom: 10 }}>등록된 일정이 없어요.</div>}
             <div className="cal-list">
               {selNotes.map((n) => (
-                <div key={n.id} className="cal-li">
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', minWidth: 0 }}>
-                    <span className="pill" style={{ background: authorColor(n.author), color: '#fff', flex: 'none' }}>{n.author}</span>
-                    <span style={{ wordBreak: 'break-word' }}>{n.text}</span>
+                <div key={n.id} className="cal-li-wrap">
+                  <div className="cal-li">
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', minWidth: 0 }}>
+                      <span className="pill" style={{ background: authorColor(n.author), color: '#fff', flex: 'none' }}>{n.author}</span>
+                      <span style={{ wordBreak: 'break-word' }}>
+                        {n.at_time && <b style={{ marginRight: 6 }}>{n.at_time.slice(0, 5)}</b>}{n.text}
+                        {n.notify_to?.length > 0 && (
+                          <span className="helper"> · 🔔 {n.notify_to.join('·')}{n.remind_at?.length ? ` · ${n.remind_at.map(fmtAlarm).join(', ')}` : ''}</span>
+                        )}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 4, flex: 'none' }}>
+                      <button className={`btn ghost sm ${editId === n.id ? 'on' : ''}`} onClick={() => startEdit(n)} aria-label="알림 설정">🔔</button>
+                      <button className="btn ghost sm danger" onClick={() => delNote(n.id)} aria-label="삭제"><IconTrash size={13} /></button>
+                    </div>
                   </div>
-                  <button className="btn ghost sm danger" onClick={() => delNote(n.id)} aria-label="삭제"><IconTrash size={13} /></button>
+                  {editId === n.id && (
+                    <div className="cal-edit">
+                      <NotifyEditor date={n.date} atTime={n.at_time?.slice(0, 5) || ''} value={editVal} onChange={setEditVal} />
+                      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', marginTop: 8 }}>
+                        <button className="btn ghost sm" onClick={() => setEditId(null)}>취소</button>
+                        <button className="btn primary sm" onClick={() => saveEdit(n)}>알림 저장</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
             {on && notesErr !== 'no-table' && (
+              <>
               <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                <input className="input" type="time" style={{ flex: 'none', width: 120 }} value={atTime}
+                  onChange={(e) => setAtTime(e.target.value)} aria-label="시간 (선택)" />
                 <input className="input" style={{ flex: 1, minWidth: 0 }} placeholder="일정 메모 (예: 첫째 병원 10시)"
                   value={draft} onChange={(e) => setDraft(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) addNote() }} />
                 <button className="btn primary" disabled={!draft.trim() || busy} onClick={addNote}>추가</button>
               </div>
+              <NotifyEditor date={ymd(year, m, sel)} atTime={atTime} value={notify} onChange={setNotify} />
+              </>
             )}
             {notesErr && notesErr !== 'no-table' && <div className="helper neg" style={{ marginTop: 8 }}>{notesErr}</div>}
           </>
