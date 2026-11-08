@@ -26,15 +26,19 @@ async function req(cfg, path, opts = {}) {
 // from, to: 'YYYY-MM-DD' (포함)
 export async function notesFetch(cfg, from, to) {
   const res = await req(cfg,
-    `calendar_notes?date=gte.${from}&date=lte.${to}&select=id,date,text,author,created_at&order=created_at.asc&limit=1000`)
+    `calendar_notes?date=gte.${from}&date=lte.${to}&select=*&order=at_time.asc.nullsfirst,created_at.asc&limit=1000`)
   return res.json()
 }
 
-export async function notesAdd(cfg, { date, text, author }) {
+// atTime: 'HH:MM' 또는 '', notifyTo: ['창진','효연'], remind: ['eve','morning','1h']
+export async function notesAdd(cfg, { date, text, author, atTime = '', notifyTo = [], remind = [] }) {
+  const body = { date, text, author }
+  if (atTime) body.at_time = atTime
+  if (notifyTo.length) { body.notify_to = notifyTo; body.remind = remind }
   const res = await req(cfg, 'calendar_notes', {
     method: 'POST',
     headers: { Prefer: 'return=representation' },
-    body: JSON.stringify({ date, text, author }),
+    body: JSON.stringify(body),
   })
   const [row] = await res.json()
   return row

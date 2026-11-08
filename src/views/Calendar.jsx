@@ -83,6 +83,10 @@ export default function Calendar() {
   const [notes, setNotes] = useState([])
   const [notesErr, setNotesErr] = useState('')
   const [draft, setDraft] = useState('')
+  const [atTime, setAtTime] = useState('')
+  const [notifyTo, setNotifyTo] = useState([])
+  const [remind, setRemind] = useState(['eve'])
+  const toggle = (list, setList, v) => setList(list.includes(v) ? list.filter((x) => x !== v) : [...list, v])
   const [busy, setBusy] = useState(false)
 
   const loadNotes = useCallback(async () => {
@@ -118,8 +122,10 @@ export default function Calendar() {
     if (!text || busy) return
     setBusy(true)
     try {
-      const row = await notesAdd(syncConfig, { date: ymd(year, m, sel), text, author: isCommon ? '공통' : profile })
-      setNotes((xs) => [...xs, row]); setDraft('')
+      const rm = remind.filter((k) => k !== '1h' || atTime)
+      const row = await notesAdd(syncConfig, { date: ymd(year, m, sel), text, author: isCommon ? '공통' : profile, atTime, notifyTo, remind: rm })
+      setNotes((xs) => [...xs, row]); setDraft(''); setAtTime('')
+      if (notifyTo.length) showToast(`${notifyTo.join('·')}에게 텔레그램 알림을 보냈어요`)
     } catch (e) { showToast('메모 저장 실패: ' + String(e.message || e).slice(0, 40)) }
     finally { setBusy(false) }
   }
@@ -191,7 +197,7 @@ export default function Calendar() {
                   </>
                 )}
                 {mode === 'notes' && ns.slice(0, 2).map((n) => (
-                  <span key={n.id} className="cal-note" style={{ borderColor: authorColor(n.author) }}>{n.text}</span>
+                  <span key={n.id} className="cal-note" style={{ borderColor: authorColor(n.author) }}>{n.at_time ? n.at_time.slice(0, 5) + ' ' : ''}{n.text}</span>
                 ))}
                 {mode === 'notes' && ns.length > 2 && <span className="cal-more">+{ns.length - 2}</span>}
               </button>
@@ -227,19 +233,42 @@ export default function Calendar() {
                 <div key={n.id} className="cal-li">
                   <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', minWidth: 0 }}>
                     <span className="pill" style={{ background: authorColor(n.author), color: '#fff', flex: 'none' }}>{n.author}</span>
-                    <span style={{ wordBreak: 'break-word' }}>{n.text}</span>
+                    <span style={{ wordBreak: 'break-word' }}>
+                      {n.at_time && <b style={{ marginRight: 6 }}>{n.at_time.slice(0, 5)}</b>}{n.text}
+                      {n.notify_to?.length > 0 && <span className="helper"> · 🔔 {n.notify_to.join('·')}</span>}
+                    </span>
                   </div>
                   <button className="btn ghost sm danger" onClick={() => delNote(n.id)} aria-label="삭제"><IconTrash size={13} /></button>
                 </div>
               ))}
             </div>
             {on && notesErr !== 'no-table' && (
+              <>
               <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                <input className="input" type="time" style={{ flex: 'none', width: 120 }} value={atTime}
+                  onChange={(e) => setAtTime(e.target.value)} aria-label="시간 (선택)" />
                 <input className="input" style={{ flex: 1, minWidth: 0 }} placeholder="일정 메모 (예: 첫째 병원 10시)"
                   value={draft} onChange={(e) => setDraft(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) addNote() }} />
                 <button className="btn primary" disabled={!draft.trim() || busy} onClick={addNote}>추가</button>
               </div>
+              <div className="cal-notify">
+                <span className="helper">텔레그램 알림</span>
+                {PROFILES.map((p) => (
+                  <button key={p.id} className={`chip ${notifyTo.includes(p.id) ? 'on' : ''}`} onClick={() => toggle(notifyTo, setNotifyTo, p.id)}>{p.id}</button>
+                ))}
+                {notifyTo.length > 0 && (
+                  <>
+                    <span className="helper" style={{ marginLeft: 6 }}>미리 알림</span>
+                    {[['eve', '전날 저녁 9시'], ['morning', '당일 아침 8시'], ['1h', '1시간 전']].map(([k, label]) => (
+                      <button key={k} className={`chip ${remind.includes(k) ? 'on' : ''}`} disabled={k === '1h' && !atTime}
+                        title={k === '1h' && !atTime ? '시간을 입력해야 쓸 수 있어요' : ''}
+                        onClick={() => toggle(remind, setRemind, k)}>{label}</button>
+                    ))}
+                  </>
+                )}
+              </div>
+              </>
             )}
             {notesErr && notesErr !== 'no-table' && <div className="helper neg" style={{ marginTop: 8 }}>{notesErr}</div>}
           </>
