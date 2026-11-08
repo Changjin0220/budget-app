@@ -432,7 +432,10 @@ table.tbl td.c, table.tbl th.c { text-align: center; }
 @media (max-width: 560px) { .pf-total { grid-template-columns: 1fr 1fr; } .pf-total > div:first-child { grid-column: 1 / -1; } }
 
 /* 일정 텔레그램 알림 선택 */
-.cal-notify { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; }
+.cal-notify { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.cal-notify-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.cal-li-wrap { display: flex; flex-direction: column; }
+.cal-edit { background: var(--lav-50); border-radius: 10px; padding: 4px 10px 10px; margin: 4px 0 8px; }
 .cal-notify .chip { border: 1px solid var(--lav-100); background: #fff; color: var(--ink-2); border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; }
 .cal-notify .chip.on { background: var(--lav-600); border-color: var(--lav-600); color: #fff; }
 .cal-notify .chip:disabled { opacity: .4; }

@@ -30,15 +30,26 @@ export async function notesFetch(cfg, from, to) {
   return res.json()
 }
 
-// atTime: 'HH:MM' 또는 '', notifyTo: ['창진','효연'], remind: ['eve','morning','1h']
-export async function notesAdd(cfg, { date, text, author, atTime = '', notifyTo = [], remind = [] }) {
+// atTime: 'HH:MM' 또는 '', notifyTo: ['창진','효연'], remindAt: timestamptz 문자열 배열
+export async function notesAdd(cfg, { date, text, author, atTime = '', notifyTo = [], remindAt = [] }) {
   const body = { date, text, author }
   if (atTime) body.at_time = atTime
-  if (notifyTo.length) { body.notify_to = notifyTo; body.remind = remind }
+  if (notifyTo.length) { body.notify_to = notifyTo; body.remind_at = remindAt }
   const res = await req(cfg, 'calendar_notes', {
     method: 'POST',
     headers: { Prefer: 'return=representation' },
     body: JSON.stringify(body),
+  })
+  const [row] = await res.json()
+  return row
+}
+
+// 알림 대상·시각만 수정 (서버에서 이 두 칸만 수정 허용)
+export async function notesUpdate(cfg, id, { notify_to, remind_at }) {
+  const res = await req(cfg, `calendar_notes?id=eq.${Number(id)}`, {
+    method: 'PATCH',
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify({ notify_to, remind_at }),
   })
   const [row] = await res.json()
   return row
