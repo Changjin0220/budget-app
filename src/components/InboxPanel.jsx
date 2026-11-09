@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useApp } from '../data/store'
 import { cloudEnabled } from '../data/cloud'
 import { inboxFetch, inboxMark } from '../data/inbox'
-import { parseCardSms, matchPayment, buildCategoryHints, normMerchant } from '../data/smsParser'
+import { parseCardSms, matchPayment, buildCategoryHints } from '../data/smsParser'
 import { MajorSelect, MinorSelect } from './fields'
 import { Card } from './ui'
 import { uid } from '../utils/id'
@@ -26,7 +26,7 @@ export default function InboxPanel() {
       const rows = await inboxFetch(syncConfig, profile)
       setItems(rows.map((r) => {
         const parsed = parseCardSms(r.body, r.received_at)
-        const hint = hints.get(normMerchant(parsed.merchant)) || {}
+        const hint = hints.get(parsed.merchant) || {}
         return {
           ...r, parsed,
           major: hint.major || '', minor: hint.minor || '',
@@ -42,6 +42,21 @@ export default function InboxPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [on, syncConfig, profile])
 
+  // 클라우드에서 최신 내역이 늦게 도착하면 추천을 다시 계산 (직접 고른 건 유지)
+  useEffect(() => {
+    setItems((xs) => {
+      let changed = false
+      const next = xs.map((x) => {
+        if (x.touched || x.major) return x
+        const h = hints.get(x.parsed.merchant)
+        if (!h) return x
+        changed = true
+        return { ...x, major: h.major, minor: h.minor }
+      })
+      return changed ? next : xs
+    })
+  }, [hints])
+
   useEffect(() => {
     load()
     if (!on) return
@@ -52,7 +67,7 @@ export default function InboxPanel() {
 
   if (!on || error === 'no-table' || (!items.length && !error)) return null
 
-  const patch = (id, p) => setItems((xs) => xs.map((x) => (x.id === id ? { ...x, ...p } : x)))
+  const patch = (id, p) => setItems((xs) => xs.map((x) => (x.id === id ? { ...x, ...p, touched: true } : x)))
 
   const apply = async (list) => {
     const good = list.filter((x) => x.parsed.ok)

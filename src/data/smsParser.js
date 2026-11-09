@@ -77,16 +77,42 @@ export function matchPayment(parsed, payments = []) {
   return `${parsed.card}${parsed.check ? '체크' : '카드'}`
 }
 
-// 과거 내역에서 같은 가맹점(세부사항)의 마지막 분류를 찾아 추천
+// 과거 내역에서 같은 가맹점(세부사항)에 가장 많이 쓴 분류를 추천
+// (가끔 다르게 고친 건 무시하고 다수결. 동점이면 최근 것)
+// 반환: { get(merchant) -> { major, minor } | undefined }
 export function buildCategoryHints(monthly) {
-  const hints = new Map()
+  const exact = new Map() // 정규화한 가맹점 → Map(분류 → {n, last})
+  const loose = new Map() // 괄호 뗀 가맹점 → 같은 구조 (예: '쿠팡(쿠페이)' 기록이 없을 때 '쿠팡'으로)
+  let seq = 0
+  const add = (map, key, cat) => {
+    if (!key) return
+    const m = map.get(key) || new Map()
+    const o = m.get(cat) || { n: 0, last: 0 }
+    o.n += 1; o.last = ++seq
+    m.set(cat, o); map.set(key, m)
+  }
   for (let mo = 1; mo <= 12; mo++) {
     for (const r of monthly?.[mo]?.rows || []) {
-      const key = normMerchant(r.detail)
-      if (key && r.major) hints.set(key, { major: r.major, minor: r.minor || '' })
+      if (!r.major || r.kind === 'income') continue
+      const cat = `${r.major}\u0000${r.minor || ''}`
+      add(exact, normMerchant(r.detail), cat)
+      add(loose, looseMerchant(r.detail), cat)
     }
   }
-  return hints
+  const pick = (m) => {
+    if (!m) return undefined
+    let best = null
+    for (const [cat, o] of m) if (!best || o.n > best.o.n || (o.n === best.o.n && o.last > best.o.last)) best = { cat, o }
+    const [major, minor] = best.cat.split('\u0000')
+    return { major, minor }
+  }
+  return {
+    get: (merchant) => pick(exact.get(normMerchant(merchant))) || pick(loose.get(looseMerchant(merchant))),
+  }
+}
+
+export function looseMerchant(s) {
+  return normMerchant(s).replace(/\(.*?\)/g, '')
 }
 
 export function normMerchant(s) {
