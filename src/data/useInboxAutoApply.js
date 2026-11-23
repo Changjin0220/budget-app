@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { useApp } from './store'
 import { cloudEnabled } from './cloud'
-import { inboxFetch, inboxMark, pushInboxRows } from './inbox'
-import { parseCardSms, matchPayment, buildCategoryHints } from './smsParser'
+import { inboxFetch, inboxMark, pushInboxRows, matchCancels } from './inbox'
+import { parseCardSms, matchPayment, buildCategoryHints, normMerchant } from './smsParser'
 import { uid } from '../utils/id'
 
 // 예전에 분류해 둔 가맹점의 카드 승인 문자는 확인 없이 바로 월간내역에 넣음.
@@ -24,19 +24,30 @@ export function useInboxAutoApply() {
       const rows = await inboxFetch(syncConfig, profile)
       const s = stateRef.current
       const hints = buildCategoryHints(s.monthly)
+      const items = rows.map((r) => ({ ...r, parsed: parseCardSms(r.body, r.received_at) }))
+
+      // 승인취소: 짝이 되는 승인(수신함 or 이미 넣은 내역)을 찾아 함께 없앰
+      const { pairs, removals } = matchCancels(s, items, normMerchant)
+      const handled = new Set([...pairs.flatMap((x) => [x.cancelId, x.pendingId]), ...removals.map((x) => x.cancelId)])
+
       const auto = []
-      for (const r of rows) {
-        const parsed = parseCardSms(r.body, r.received_at)
-        if (!parsed.ok || parsed.cancel) continue
-        const h = hints.exact(parsed.merchant)
+      for (const x of items) {
+        if (handled.has(x.id) || !x.parsed.ok || x.parsed.cancel) continue
+        const h = hints.exact(x.parsed.merchant)
         if (!h?.major) continue
-        auto.push({ id: r.id, parsed, major: h.major, minor: h.minor, payment: matchPayment(parsed, s.settings.payments), auto: true })
+        auto.push({ id: x.id, parsed: x.parsed, major: h.major, minor: h.minor, payment: matchPayment(x.parsed, s.settings.payments), auto: true })
       }
-      if (!auto.length) return
-      mutate((d) => { pushInboxRows(d, auto, () => uid('mr')) })
-      await inboxMark(syncConfig, auto.map((x) => x.id), 'done')
+      if (!auto.length && !handled.size) return
+      const rm = new Set(removals.map((x) => x.rowId))
+      mutate((d) => {
+        if (rm.size) for (let mo = 1; mo <= 12; mo++) if (d.monthly[mo]) d.monthly[mo].rows = d.monthly[mo].rows.filter((r) => !rm.has(r.id))
+        if (auto.length) pushInboxRows(d, auto, () => uid('mr'))
+      })
+      if (auto.length) await inboxMark(syncConfig, auto.map((x) => x.id), 'done')
+      if (handled.size) await inboxMark(syncConfig, [...handled], 'skip')
       window.dispatchEvent(new Event(INBOX_CHANGED))
-      showToast(`문자 ${auto.length}건을 자동으로 반영했어요`)
+      const msg = [auto.length ? `${auto.length}건 자동 반영` : '', handled.size ? `승인취소 ${pairs.length + removals.length}건 정리` : '']
+      showToast('문자 ' + msg.filter(Boolean).join(', ') + '했어요')
     } catch { /* 다음 기회에 재시도 */ }
     finally { busy.current = false }
   }, [ready, syncConfig, profile, mutate, showToast])

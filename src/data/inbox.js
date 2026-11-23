@@ -78,3 +78,39 @@ export function pushInboxRows(d, list, makeId) {
   }
   return added
 }
+
+// 승인취소 문자 짝 찾기.
+// 1) 아직 수신함에 있는 같은 가맹점·같은 금액의 승인 문자 → 둘 다 처리(내역에 안 넣음)
+// 2) 이미 월간내역에 들어간 같은 가맹점·같은 금액 지출 중 취소일 이전 가장 최근 것 → 그 행 삭제
+// 못 찾으면 수신함에 남김. items: [{ id, received_at, parsed }]
+export function matchCancels(state, items, normMerchant) {
+  const key = (p) => normMerchant(p.merchant)
+  const when = (p) => p.month * 100 + p.day
+  const usedPending = new Set()
+  const usedRows = new Set()
+  const pairs = []     // { cancelId, pendingId }
+  const removals = []  // { cancelId, rowId, month }
+  const cancels = items.filter((x) => x.parsed.ok && x.parsed.cancel)
+    .sort((a, b) => String(a.received_at).localeCompare(String(b.received_at)))
+  for (const c of cancels) {
+    const p = c.parsed
+    const pend = items
+      .filter((x) => x.parsed.ok && !x.parsed.cancel && !usedPending.has(x.id)
+        && x.parsed.amount === p.amount && key(x.parsed) === key(p)
+        && String(x.received_at) <= String(c.received_at))
+      .sort((a, b) => String(b.received_at).localeCompare(String(a.received_at)))[0]
+    if (pend) { usedPending.add(pend.id); pairs.push({ cancelId: c.id, pendingId: pend.id }); continue }
+    let best = null
+    for (let mo = 1; mo <= 12; mo++) {
+      ;(state.monthly[mo]?.rows || []).forEach((r, i) => {
+        if (usedRows.has(r.id) || r.kind !== 'expense' || Number(r.amount) !== p.amount) return
+        if (normMerchant(r.detail) !== key(p)) return
+        const w = mo * 100 + (Number(r.day) || 0)
+        if (w > when(p)) return
+        if (!best || w > best.w || (w === best.w && i > best.i)) best = { w, i, rowId: r.id, month: mo }
+      })
+    }
+    if (best) { usedRows.add(best.rowId); removals.push({ cancelId: c.id, rowId: best.rowId, month: best.month }) }
+  }
+  return { pairs, removals }
+}
