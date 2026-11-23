@@ -40,17 +40,21 @@ export default function Calendar() {
   // ---- 누구 기준으로 볼지 (창진 / 효연 / 공통) ----
   // 로그인한 프로필과 상관없이 캘린더에서만 전환. 상대방 데이터는 읽기만 함(저장 안 함).
   const [who, setWho] = useState(() => (isCommon ? COMMON_ID : profile))
-  const other = isCommon ? null : PROFILES.find((p) => p.id !== profile)?.id
-  const [otherMonthly, setOtherMonthly] = useState(null)
-  const loadOther = useCallback(async () => {
-    if (!other) return
-    let s = loadState(other)
-    if (cloudEnabled(syncConfig)) {
-      try { const r = await cloudLoad(syncConfig, other); if (r?.state) s = r.state } catch { /* 로컬 사본으로 */ }
+  const others = isCommon ? [] : PROFILES.filter((p) => p.id !== profile).map((p) => p.id)
+  const othersKey = others.join('|')
+  const [otherMonthly, setOtherMonthly] = useState(null) // { 이름: monthly }
+  const loadOthers = useCallback(async () => {
+    const out = {}
+    for (const o of othersKey ? othersKey.split('|') : []) {
+      let s = loadState(o)
+      if (cloudEnabled(syncConfig)) {
+        try { const r = await cloudLoad(syncConfig, o); if (r?.state) s = r.state } catch { /* 로컬 사본으로 */ }
+      }
+      out[o] = s?.monthly || {}
     }
-    setOtherMonthly(s?.monthly || {})
-  }, [other, syncConfig])
-  useEffect(() => { if (who !== profile) loadOther() }, [who, profile, loadOther])
+    setOtherMonthly(out)
+  }, [othersKey, syncConfig])
+  useEffect(() => { if (who !== profile) loadOthers() }, [who, profile, loadOthers])
 
   // ---- 수입/지출 집계 ----
   const rows = useMemo(() => {
@@ -60,11 +64,11 @@ export default function Calendar() {
       return who === COMMON_ID ? all : all.filter((r) => r._owner === who)
     }
     const mine = tag(state.monthly[m]?.rows, profile)
-    const theirs = tag(otherMonthly?.[m]?.rows, other)
     if (who === profile) return mine
-    if (who === other) return theirs
-    return [...mine, ...theirs]
-  }, [isCommon, who, state, m, profile, other, otherMonthly])
+    const theirs = (o) => tag(otherMonthly?.[o]?.[m]?.rows, o)
+    if (who !== COMMON_ID) return theirs(who)
+    return [...mine, ...Object.keys(otherMonthly || {}).flatMap(theirs)]
+  }, [isCommon, who, state, m, profile, otherMonthly])
   const byDay = useMemo(() => {
     const map = {}
     for (const r of rows) {

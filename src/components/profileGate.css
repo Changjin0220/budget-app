@@ -38,3 +38,12 @@
 .auth-form .input { width: 100%; }
 .auth-msg { margin-top: 12px; font-size: 12.5px; color: var(--ink-2); background: var(--surface-2); border-radius: 10px; padding: 10px 12px; line-height: 1.5; }
 .auth-form .btn { justify-content: center; }
+.name-pick { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.chip-pick { border: 2px solid var(--line); background: #fff; border-radius: 999px; padding: 8px 16px; font-weight: 800; font-size: 14px; color: var(--ink-2); }
+.chip-pick.on { border-color: var(--lav-600); background: var(--lav-50); color: var(--lav-600); }
+.chip-pick:disabled { opacity: .45; }
+.chip-pick span { font-weight: 600; font-size: 11.5px; }
+.name-row { display: flex; gap: 8px; align-items: center; }
+.name-row .input { flex: 1; min-width: 0; }
+.me-dot { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--line); background: #fff; font-size: 11.5px; font-weight: 800; color: #fff; }
+.me-dot.on { background: var(--lav-600); border-color: var(--lav-600); }

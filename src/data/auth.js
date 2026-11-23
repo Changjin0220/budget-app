@@ -30,23 +30,27 @@ export async function myMemberships(userId) {
   return data || []
 }
 
-export async function householdMembers(hid) {
-  const { data, error } = await supabase.from('ledger_members').select('profile, user_id').eq('household_id', hid).order('joined_at')
-  if (error) throw error
-  return data || []
+// 가계부 이름 목록 + 누가 이미 들어왔는지
+export async function householdSlots(hid) {
+  const [{ data: slots, error: e1 }, { data: mem, error: e2 }] = await Promise.all([
+    supabase.from('ledger_slots').select('name, sort').eq('household_id', hid).order('sort'),
+    supabase.from('ledger_members').select('profile').eq('household_id', hid),
+  ])
+  if (e1) throw e1
+  if (e2) throw e2
+  const joined = new Set((mem || []).map((m) => m.profile))
+  return (slots || []).map((s) => ({ name: s.name, joined: joined.has(s.name) }))
 }
 
-export async function createHousehold(name, profile) {
-  const { data, error } = await supabase.rpc('create_household', { p_name: name, p_profile: profile })
+const rpc = async (fn, args) => {
+  const { data, error } = await supabase.rpc(fn, args)
   if (error) throw error
   return data
 }
-
-export async function joinHousehold(code, profile) {
-  const { data, error } = await supabase.rpc('join_household', { p_code: code, p_profile: profile })
-  if (error) throw error
-  return data
-}
+export const createHousehold = (name, names, my) => rpc('create_household', { p_name: name, p_names: names, p_my: my })
+export const peekHousehold = (code) => rpc('peek_household', { p_code: code })
+export const joinHousehold = (code, profile) => rpc('join_household', { p_code: code, p_profile: profile })
+export const addSlot = (name) => rpc('add_slot', { p_name: name })
 
 // 로그아웃 시 이 기기에 남은 가계부 사본도 지움 (다른 사람이 같은 기기로 로그인할 수 있으니)
 export async function signOutAndClear() {
