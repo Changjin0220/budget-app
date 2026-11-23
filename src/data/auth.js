@@ -22,8 +22,8 @@ export async function authHeaders(cfg) {
 // 내가 속한 가구 목록
 export async function myMemberships(userId) {
   const { data, error } = await supabase
-    .from('members')
-    .select('household_id, profile, households(name, invite_code)')
+    .from('ledger_members')
+    .select('household_id, profile, ledger_households(name, invite_code)')
     .eq('user_id', userId)
     .order('joined_at')
   if (error) throw error
@@ -31,7 +31,7 @@ export async function myMemberships(userId) {
 }
 
 export async function householdMembers(hid) {
-  const { data, error } = await supabase.from('members').select('profile, user_id').eq('household_id', hid).order('joined_at')
+  const { data, error } = await supabase.from('ledger_members').select('profile, user_id').eq('household_id', hid).order('joined_at')
   if (error) throw error
   return data || []
 }

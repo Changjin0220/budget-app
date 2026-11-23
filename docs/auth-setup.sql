@@ -12,46 +12,46 @@ create table if not exists backup.calendar_notes_20261123 as select * from publi
 create table if not exists backup.inbox_20261123 as select * from public.inbox;
 
 -- 1) 가구와 구성원
-create table if not exists public.households (
+create table if not exists public.ledger_households (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   invite_code text not null unique,
   created_by uuid references auth.users(id),
   created_at timestamptz default now()
 );
-create table if not exists public.members (
-  household_id uuid not null references public.households(id) on delete cascade,
+create table if not exists public.ledger_members (
+  household_id uuid not null references public.ledger_households(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
   profile text not null,                 -- 앱 안에서 쓰는 이름 (예: 창진, 효연)
   joined_at timestamptz default now(),
   primary key (household_id, user_id),
   unique (household_id, profile)
 );
-alter table public.households enable row level security;
-alter table public.members enable row level security;
+alter table public.ledger_households enable row level security;
+alter table public.ledger_members enable row level security;
 
 -- 우리 집(기존 데이터) 가구. 두 분은 이 초대코드로 참여
-insert into public.households (id, name, invite_code)
+insert into public.ledger_households (id, name, invite_code)
 values ('3668be2c-55fa-47db-a335-bb35fca478a0', '우리집', 'B7G2P68J')
 on conflict (id) do nothing;
 
 -- 내가 속한 가구인지 (정책에서 사용)
 create or replace function public.is_member(hid uuid) returns boolean
 language sql stable security definer set search_path = '' as $$
-  select exists (select 1 from public.members where household_id = hid and user_id = auth.uid())
+  select exists (select 1 from public.ledger_members where household_id = hid and user_id = auth.uid())
 $$;
 -- 내 가구 id (새 행 기본값). 로그인 안 한 단축어·시트는 기존 우리집 가구로
 create or replace function public.my_household() returns uuid
 language sql stable security definer set search_path = '' as $$
   select coalesce(
-    (select household_id from public.members where user_id = auth.uid() order by joined_at limit 1),
+    (select household_id from public.ledger_members where user_id = auth.uid() order by joined_at limit 1),
     '3668be2c-55fa-47db-a335-bb35fca478a0'::uuid)
 $$;
 
-drop policy if exists "hh read" on public.households;
-create policy "hh read" on public.households for select to authenticated using (public.is_member(id));
-drop policy if exists "mem read" on public.members;
-create policy "mem read" on public.members for select to authenticated using (public.is_member(household_id));
+drop policy if exists "hh read" on public.ledger_households;
+create policy "hh read" on public.ledger_households for select to authenticated using (public.is_member(id));
+drop policy if exists "mem read" on public.ledger_members;
+create policy "mem read" on public.ledger_members for select to authenticated using (public.is_member(household_id));
 
 -- 가구 만들기 / 초대코드로 참여
 create or replace function public.create_household(p_name text, p_profile text) returns json
@@ -60,9 +60,9 @@ declare hid uuid; code text;
 begin
   if auth.uid() is null then raise exception '로그인이 필요해요'; end if;
   code := upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 8));
-  insert into public.households (name, invite_code, created_by) values (coalesce(nullif(trim(p_name), ''), '우리집'), code, auth.uid())
+  insert into public.ledger_households (name, invite_code, created_by) values (coalesce(nullif(trim(p_name), ''), '우리집'), code, auth.uid())
     returning id into hid;
-  insert into public.members (household_id, user_id, profile) values (hid, auth.uid(), trim(p_profile));
+  insert into public.ledger_members (household_id, user_id, profile) values (hid, auth.uid(), trim(p_profile));
   return json_build_object('id', hid, 'invite_code', code);
 end $$;
 
@@ -71,12 +71,12 @@ language plpgsql security definer set search_path = '' as $$
 declare hid uuid;
 begin
   if auth.uid() is null then raise exception '로그인이 필요해요'; end if;
-  select id into hid from public.households where invite_code = upper(trim(p_code));
+  select id into hid from public.ledger_households where invite_code = upper(trim(p_code));
   if hid is null then raise exception '초대코드를 찾을 수 없어요'; end if;
-  if exists (select 1 from public.members where household_id = hid and profile = trim(p_profile) and user_id <> auth.uid()) then
+  if exists (select 1 from public.ledger_members where household_id = hid and profile = trim(p_profile) and user_id <> auth.uid()) then
     raise exception '이미 다른 사람이 쓰는 이름이에요';
   end if;
-  insert into public.members (household_id, user_id, profile) values (hid, auth.uid(), trim(p_profile))
+  insert into public.ledger_members (household_id, user_id, profile) values (hid, auth.uid(), trim(p_profile))
     on conflict (household_id, user_id) do update set profile = excluded.profile;
   return json_build_object('id', hid);
 end $$;

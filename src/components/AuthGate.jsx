@@ -147,8 +147,8 @@ export default function AuthGate({ children }) {
     email: session.user.email,
     hid: member.household_id,
     myProfile: member.profile,
-    householdName: member.households?.name,
-    inviteCode: member.households?.invite_code,
+    householdName: member.ledger_households?.name,
+    inviteCode: member.ledger_households?.invite_code,
   }
   return <AuthCtx.Provider value={value}>{children(value)}</AuthCtx.Provider>
 }
