@@ -35,7 +35,7 @@ export default function ProfileGate() {
           <span className="gp-go">보기<IconArrowRight size={13} /></span>
         </button>
 
-        <div className="gate-foot">데이터는 이 기기에 안전하게 저장돼요 · 추후 클라우드 동기화 예정</div>
+        <div className="gate-foot">로그인한 가구 사람끼리만 데이터를 함께 봐요</div>
       </div>
     </div>
   )

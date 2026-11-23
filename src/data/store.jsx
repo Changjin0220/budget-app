@@ -3,8 +3,9 @@ import { defaultState, emptyMonthly, defaultAssets, defaultSettings, PROFILES, C
 import {
   loadState, saveState, getLastProfile, setLastProfile, getLocalTs, setLocalTs,
 } from './storage'
+import { SUPA_URL, SUPA_KEY } from './auth'
 import {
-  loadSyncConfig, saveSyncConfig, cloudEnabled, cloudLoad, cloudSave, cloudTest,
+  cloudEnabled, cloudLoad, cloudSave, cloudTest,
 } from './cloud'
 import { mergeStates, syncCategoryLists } from './merge'
 
@@ -56,7 +57,7 @@ function syncCategoriesWithSpouse(profileId, mySettings) {
   return merged
 }
 
-export function AppProvider({ children }) {
+export function AppProvider({ children, hid }) {
   const [profile, setProfileRaw] = useState(() => getLastProfile() || null)
   const [state, setState] = useState(() => {
     if (profile === COMMON_ID) return loadCommonMerged()
@@ -66,7 +67,8 @@ export function AppProvider({ children }) {
   const isCommon = profile === COMMON_ID
 
   // ----- 클라우드 동기화 상태 -----
-  const [syncConfig, setSyncConfigState] = useState(() => loadSyncConfig())
+  // 로그인한 가구 기준으로 항상 클라우드 사용 (예전의 URL·key 직접 입력 방식은 없앰)
+  const syncConfig = useMemo(() => ({ enabled: !!hid, url: SUPA_URL, key: SUPA_KEY, hid }), [hid])
   const [syncStatus, setSyncStatus] = useState('idle') // idle|syncing|synced|error|offline
   const [syncError, setSyncError] = useState('')
 
@@ -292,9 +294,7 @@ export function AppProvider({ children }) {
   }, [isCommon])
 
   // ----- 동기화 설정 API (Settings에서 사용) -----
-  const updateSyncConfig = useCallback((cfg) => {
-    setSyncConfigState(cfg); saveSyncConfig(cfg); cfgRef.current = cfg
-  }, [])
+  const updateSyncConfig = useCallback(() => {}, [])
   const testConnection = useCallback(async (cfg) => {
     await cloudTest(cfg || cfgRef.current); return true
   }, [])

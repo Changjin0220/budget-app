@@ -6,14 +6,15 @@
 // 폰과 앱이 동시에 쓰면 내역이 덮어써질 수 있음.
 // ============================================================
 
+import { authHeaders } from './auth'
+
 function base(cfg) { return cfg.url.replace(/\/+$/, '') }
 
 async function req(cfg, path, opts = {}) {
   const res = await fetch(`${base(cfg)}/rest/v1/${path}`, {
     ...opts,
     headers: {
-      apikey: cfg.key,
-      Authorization: `Bearer ${cfg.key}`,
+      ...(await authHeaders(cfg)),
       'Content-Type': 'application/json',
       ...(opts.headers || {}),
     },
