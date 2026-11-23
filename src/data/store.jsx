@@ -7,7 +7,7 @@ import { SUPA_URL, SUPA_KEY } from './auth'
 import {
   cloudEnabled, cloudLoad, cloudSave, cloudTest,
 } from './cloud'
-import { mergeStates, syncCategoryLists } from './merge'
+import { mergeMany, syncCategoryLists } from './merge'
 
 const Ctx = createContext(null)
 
@@ -30,8 +30,7 @@ export function ensureShape(s) {
 }
 
 function loadCommonMerged() {
-  const [idA, idB] = PROFILES.map((p) => p.id)
-  return mergeStates(ensureShape(loadState(idA)), idA, ensureShape(loadState(idB)), idB)
+  return mergeMany(PROFILES.map((p) => [ensureShape(loadState(p.id)), p.id]))
 }
 
 function catFingerprint(s) {
@@ -40,19 +39,21 @@ function catFingerprint(s) {
 
 // 배우자 프로필과 카테고리/결제수단을 합쳐서(누락분만 서로 채움) 상대쪽 저장(+가능하면 클라우드 push)까지 처리하고, 합쳐진 결과를 반환
 function syncCategoriesWithSpouse(profileId, mySettings) {
-  const other = PROFILES.find((p) => p.id !== profileId)
-  if (!other) return mySettings
-  const otherState = ensureShape(loadState(other.id))
-  const merged = syncCategoryLists(mySettings, otherState.settings)
-  if (catFingerprint(merged) !== catFingerprint(otherState.settings)) {
-    otherState.settings.income = merged.income
-    otherState.settings.saving = merged.saving
-    otherState.settings.expense = merged.expense
-    otherState.settings.payments = merged.payments
-    // 이 기기에 있는 배우자 사본만 고침. 클라우드로는 올리지 않음:
-    // 새 기기에서는 배우자 사본이 비어 있어서, 올리면 클라우드의 배우자 데이터를 빈 값으로 덮어씀(2026-11-05 사고).
-    // 배우자 쪽은 본인이 로그인할 때 이 함수가 반대로 돌면서 카테고리를 맞춤.
-    saveState(other.id, otherState)
+  let merged = mySettings
+  const others = PROFILES.filter((p) => p.id !== profileId)
+  for (const o of others) merged = syncCategoryLists(merged, ensureShape(loadState(o.id)).settings)
+  for (const o of others) {
+    const otherState = ensureShape(loadState(o.id))
+    if (catFingerprint(merged) !== catFingerprint(otherState.settings)) {
+      otherState.settings.income = merged.income
+      otherState.settings.saving = merged.saving
+      otherState.settings.expense = merged.expense
+      otherState.settings.payments = merged.payments
+      // 이 기기에 있는 다른 사람 사본만 고침. 클라우드로는 올리지 않음:
+      // 새 기기에서는 사본이 비어 있어서, 올리면 클라우드 데이터를 빈 값으로 덮어씀(2026-11-05 사고).
+      // 상대 쪽은 본인이 로그인할 때 이 함수가 반대로 돌면서 카테고리를 맞춤.
+      saveState(o.id, otherState)
+    }
   }
   return merged
 }
@@ -150,9 +151,9 @@ export function AppProvider({ children, hid }) {
       }
       return s
     }
-    const [idA, idB] = PROFILES.map((p) => p.id)
-    const [a, b] = await Promise.all([loadOne(idA), loadOne(idB)])
-    setState(mergeStates(a, idA, b, idB))
+    const ids = PROFILES.map((p) => p.id)
+    const list = await Promise.all(ids.map(loadOne))
+    setState(mergeMany(list.map((s, i) => [s, ids[i]])))
   }, [])
 
   const setProfile = useCallback((p) => {

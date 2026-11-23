@@ -1,8 +1,9 @@
 // 두 프로필(창진/효연)의 데이터를 "공통" 보기용으로 합침 — 읽기 전용
 // 각 행에는 _owner를 붙여서(누가 입력한 항목인지) 화면에 표시할 수 있게 함
 
+// 이미 _owner가 붙은 행(여러 명을 차례로 합칠 때)은 그대로 둠
 function tag(list, owner) {
-  return (list || []).map((r) => ({ ...r, _owner: owner }))
+  return (list || []).map((r) => ({ ...r, _owner: r._owner || owner }))
 }
 
 export function mergeCategoryGroups(groupsA, groupsB) {
@@ -82,4 +83,12 @@ export function mergeStates(stateA, ownerA, stateB, ownerB) {
     assets: mergeAssets(stateA.assets, stateB.assets, ownerA, ownerB),
     posts: [...tag(stateA.posts, ownerA), ...tag(stateB.posts, ownerB)],
   }
+}
+
+// 여러 명의 데이터를 차례로 합침. entries: [[state, owner], ...]
+export function mergeMany(entries) {
+  if (!entries.length) return null
+  const [[s0, o0], ...rest] = entries
+  if (!rest.length) return mergeStates(s0, o0, { ...s0, settings: s0.settings, fixed: [], monthly: {}, installments: [], loans: [], assets: { groups: [] }, posts: [] }, o0)
+  return rest.reduce((acc, [s, o], i) => mergeStates(acc, i === 0 ? o0 : undefined, s, o), s0)
 }

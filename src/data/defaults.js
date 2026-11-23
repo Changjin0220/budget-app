@@ -69,18 +69,30 @@ export function defaultState(year = 2026) {
   }
 }
 
+// 가계부를 같이 쓰는 사람 이름 목록. 로그인 후 서버의 가계부 이름 목록으로 채움(setProfiles).
+// 배열 자체를 바꿔 끼우므로 import 한 곳에서도 최신 목록이 보임.
+const PROFILE_COLORS = ['#8b7ad6', '#f0a9bf', '#7fccbd', '#f2c94c', '#a5c8f0', '#f2a98f', '#c9c2ec', '#9ad0c2']
 export const PROFILES = [
-  { id: '창진', name: '창진', color: '#8b7ad6' },
-  { id: '효연', name: '효연', color: '#f0a9bf' },
+  { id: '창진', name: '창진', color: PROFILE_COLORS[0] },
+  { id: '효연', name: '효연', color: PROFILE_COLORS[1] },
 ]
 
-// 창진+효연 데이터를 합산해서 보는 읽기 전용 "가구 전체" 뷰
+// 모두의 데이터를 합산해서 보는 읽기 전용 "가구 전체" 뷰
 export const COMMON_ID = '공통'
 export const COMMON_PROFILE = {
   id: COMMON_ID, name: '공통', color: '#5bb8a6',
   avatarBg: 'linear-gradient(135deg, #8b7ad6 50%, #f0a9bf 50%)',
 }
 export const ALL_PROFILES = [...PROFILES, COMMON_PROFILE]
+
+export function setProfiles(names) {
+  const list = (names || []).filter((n) => n && n !== COMMON_ID)
+    .map((n, i) => ({ id: n, name: n, color: PROFILE_COLORS[i % PROFILE_COLORS.length] }))
+  PROFILES.splice(0, PROFILES.length, ...list)
+  ALL_PROFILES.splice(0, ALL_PROFILES.length, ...list, COMMON_PROFILE)
+  const [a, b] = list
+  COMMON_PROFILE.avatarBg = b ? `linear-gradient(135deg, ${a.color} 50%, ${b.color} 50%)` : COMMON_PROFILE.color
+}
 
 // 카테고리(대분류) 도넛/막대 색상 팔레트 (파스텔)
 export const PALETTE = [

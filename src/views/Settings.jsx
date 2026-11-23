@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../components/AuthGate'
-import { signOutAndClear } from '../data/auth'
+import { signOutAndClear, addSlot } from '../data/auth'
 import { useApp, ensureShape } from '../data/store'
 import { Card, useConfirm } from '../components/ui'
 import { uid } from '../utils/id'
@@ -105,30 +105,32 @@ function PaymentsCard() {
 function SyncCategoriesCard() {
   const { profile, isCommon, mutate, showToast } = useApp()
   if (isCommon) return null
-  const other = PROFILES.find((p) => p.id !== profile)
-  if (!other) return null
+  const others = PROFILES.filter((p) => p.id !== profile)
+  if (!others.length) return null
+  const names = others.map((o) => o.name).join('·')
 
-  const syncFromOther = () => {
-    const raw = loadState(other.id)
-    if (!raw) { showToast(`${other.name} 프로필에는 아직 데이터가 없어요`); return }
-    const otherSettings = ensureShape(raw).settings
+  const syncFromOthers = () => {
+    const list = others.map((o) => loadState(o.id)).filter(Boolean)
+    if (!list.length) { showToast(`${names} 쪽에는 아직 데이터가 없어요`); return }
     mutate((d) => {
-      const synced = syncCategoryLists(d.settings, otherSettings)
-      d.settings.income = synced.income
-      d.settings.saving = synced.saving
-      d.settings.expense = synced.expense
-      d.settings.payments = synced.payments
+      for (const raw of list) {
+        const synced = syncCategoryLists(d.settings, ensureShape(raw).settings)
+        d.settings.income = synced.income
+        d.settings.saving = synced.saving
+        d.settings.expense = synced.expense
+        d.settings.payments = synced.payments
+      }
     })
-    showToast(`${other.name}의 카테고리·결제수단을 가져와 합쳤어요`)
+    showToast(`${names}의 카테고리·결제수단을 가져와 합쳤어요`)
   }
 
   return (
-    <Card title="배우자와 카테고리 맞추기" dot="#f2a98f">
+    <Card title="함께 쓰는 사람과 카테고리 맞추기" dot="#f2a98f">
       <p className="helper" style={{ marginTop: 0 }}>
-        이제 대분류/소분류나 결제수단을 추가·삭제·수정할 때마다 <b>{other.name}</b> 쪽에도 자동으로 맞춰져요(내 목록을 지우지 않는 안전한 합치기).
-        이 버튼은 이 기능이 생기기 전부터 있던 예전 차이를 한 번에 맞출 때만 쓰면 돼요.
+        대분류/소분류나 결제수단을 추가·삭제·수정할 때마다 <b>{names}</b> 쪽에도 자동으로 맞춰져요(내 목록을 지우지 않는 안전한 합치기).
+        이 버튼은 예전 차이를 한 번에 맞출 때만 쓰면 돼요.
       </p>
-      <button className="btn primary" onClick={syncFromOther}><IconRefresh size={14} />{other.name}의 목록 지금 한 번 가져와 합치기</button>
+      <button className="btn primary" onClick={syncFromOthers}><IconRefresh size={14} />{names}의 목록 지금 한 번 가져와 합치기</button>
     </Card>
   )
 }
@@ -142,6 +144,13 @@ function AccountCard() {
     catch { showToast('초대코드: ' + auth.inviteCode) }
   }
   const logout = async () => { await signOutAndClear(); window.location.reload() }
+  const [newName, setNewName] = useState('')
+  const addName = async () => {
+    const n = newName.trim()
+    if (!n) return
+    try { await addSlot(n); setNewName(''); await auth.reload(); showToast(`${n}을(를) 추가했어요. 초대코드로 들어올 때 고를 수 있어요`) }
+    catch (e) { showToast('추가 실패: ' + (e.message || e)) }
+  }
   return (
     <Card title={<><IconCloud size={15} />계정 · 함께 쓰는 사람</>} dot="#7fccbd">
       <div style={{ display: 'grid', gap: 10, fontSize: 13.5 }}>
@@ -151,6 +160,18 @@ function AccountCard() {
           <b style={{ letterSpacing: 2, fontSize: 16 }}>{auth.inviteCode}</b>
           <button className="btn sm" onClick={copy}>복사</button>
           <span className="helper">같이 쓸 사람이 가입한 뒤 이 코드를 넣으면 같은 가계부를 봐요</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <span className="helper">같이 쓰는 사람</span>
+          {auth.slots.map((sl) => (
+            <span key={sl.name} className="pill" title={sl.joined ? '가입함' : '아직 초대코드로 안 들어옴'}
+              style={{ background: sl.joined ? 'var(--mint-100)' : 'var(--surface-2)', color: 'var(--ink-2)' }}>
+              {sl.name}{sl.joined ? '' : ' (대기)'}
+            </span>
+          ))}
+          <input className="input" style={{ width: 110 }} placeholder="이름 추가" value={newName}
+            onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) addName() }} />
+          <button className="btn sm" onClick={addName} disabled={!newName.trim()}>추가</button>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <button className="btn gold sm" onClick={manualSync}><IconRefresh size={13} />지금 동기화</button>
