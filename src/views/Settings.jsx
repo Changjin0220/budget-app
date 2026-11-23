@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { INBOX_SQL } from '../data/inbox'
+import { useAuth } from '../components/AuthGate'
+import { signOutAndClear } from '../data/auth'
 import { useApp, ensureShape } from '../data/store'
 import { Card, useConfirm } from '../components/ui'
 import { uid } from '../utils/id'
@@ -132,74 +133,30 @@ function SyncCategoriesCard() {
   )
 }
 
-function SyncCard() {
-  const { syncConfig, updateSyncConfig, syncStatus, syncError, testConnection, manualSync, showToast } = useApp()
-  const [url, setUrl] = useState(syncConfig.url || '')
-  const [key, setKey] = useState(syncConfig.key || '')
-  const [testing, setTesting] = useState(false)
-  const [guide, setGuide] = useState(false)
-
-  const enabled = syncConfig.enabled
-  const toggle = () => {
-    if (!enabled && (!url.trim() || !key.trim())) { showToast('URL과 anon key를 입력하세요'); return }
-    updateSyncConfig({ enabled: !enabled, url: url.trim(), key: key.trim() })
-    showToast(!enabled ? '클라우드 동기화를 켰어요' : '클라우드 동기화를 껐어요')
-  }
-  const saveKeys = () => { updateSyncConfig({ ...syncConfig, url: url.trim(), key: key.trim() }); showToast('저장했어요') }
-  const test = async () => {
-    setTesting(true)
-    try { await testConnection({ enabled: true, url: url.trim(), key: key.trim() }); showToast('연결 성공!') }
-    catch (e) { showToast('연결 실패: ' + (e.message || e)) }
-    finally { setTesting(false) }
-  }
-
+function AccountCard() {
+  const { syncStatus, syncError, manualSync, showToast } = useApp()
+  const auth = useAuth()
   const statusText = { syncing: '동기화 중…', synced: '동기화됨', error: '오류: ' + syncError, idle: '대기', offline: '오프라인' }[syncStatus] || '대기'
-
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(auth.inviteCode); showToast('초대코드를 복사했어요') }
+    catch { showToast('초대코드: ' + auth.inviteCode) }
+  }
+  const logout = async () => { await signOutAndClear(); window.location.reload() }
   return (
-    <Card title={<><IconCloud size={15} />클라우드 동기화 (부부 공유)</>} dot="#7fccbd"
-      right={<button className={`btn ${enabled ? 'primary' : ''}`} onClick={toggle}>{enabled ? '켜짐 · 끄기' : '켜기'}</button>}>
-      <p className="helper" style={{ marginTop: 0 }}>
-        두 사람이 <b>같은 Supabase URL·key</b>를 넣으면, 어느 기기에서 입력해도 데이터가 자동으로 공유돼요.
-        (무료 · 최초 1회 설정) <button className="btn ghost sm" onClick={() => setGuide((v) => !v)}>{guide ? '설정법 접기' : '설정법 보기'}</button>
-      </p>
-      {guide && (
-        <ol style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.7, background: 'var(--surface-2)', padding: '12px 12px 12px 30px', borderRadius: 10 }}>
-          <li><b>supabase.com</b> 가입 → 새 프로젝트 생성 (부부가 하나만 공유)</li>
-          <li>왼쪽 <b>SQL Editor</b>에 아래 붙여넣고 실행:
-            <pre style={{ whiteSpace: 'pre-wrap', background: '#fff', border: '1px solid var(--line)', borderRadius: 8, padding: 8, marginTop: 4 }}>{`create table budgets (
-  profile text primary key,
-  data jsonb,
-  updated_at timestamptz default now()
-);
-alter table budgets enable row level security;
-create policy "app all" on budgets
-  for all using (true) with check (true);`}</pre>
-          </li>
-          <li><b>Project Settings → API</b>에서 <b>Project URL</b>과 <b>anon public key</b> 복사 → 아래 입력 → <b>연결 테스트</b> → <b>켜기</b></li>
-          <li>배우자 기기에서도 같은 URL·key 입력 후 켜면 끝!</li>
-          <li><b>(선택) 카드 문자 자동 수집</b>: SQL Editor에서 아래도 실행하면, 아이폰 단축어가 보낸 승인 문자가 월간내역의 &lsquo;문자 자동 수집&rsquo;에 떠요. 단축어 설정법은 저장소의 <code>docs/iphone-shortcut.md</code> 참고.
-            <pre style={{ whiteSpace: 'pre-wrap', background: '#fff', border: '1px solid var(--line)', borderRadius: 8, padding: 8, marginTop: 4 }}>{INBOX_SQL}</pre>
-          </li>
-        </ol>
-      )}
-      <div style={{ display: 'grid', gap: 12, marginTop: 6 }}>
-        <div className="field">
-          <label>Supabase Project URL</label>
-          <input className="input" placeholder="https://xxxx.supabase.co" value={url} onChange={(e) => setUrl(e.target.value)} />
+    <Card title={<><IconCloud size={15} />계정 · 함께 쓰는 사람</>} dot="#7fccbd">
+      <div style={{ display: 'grid', gap: 10, fontSize: 13.5 }}>
+        <div><span className="helper">로그인</span> <b>{auth.email}</b> · 가계부 이름 <b>{auth.householdName}</b> · 내 이름 <b>{auth.myProfile}</b></div>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <span className="helper">초대코드</span>
+          <b style={{ letterSpacing: 2, fontSize: 16 }}>{auth.inviteCode}</b>
+          <button className="btn sm" onClick={copy}>복사</button>
+          <span className="helper">같이 쓸 사람이 가입한 뒤 이 코드를 넣으면 같은 가계부를 봐요</span>
         </div>
-        <div className="field">
-          <label>anon public key</label>
-          <input className="input" placeholder="eyJhbGci..." value={key} onChange={(e) => setKey(e.target.value)} type="password" />
-        </div>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-          <button className="btn" onClick={test} disabled={testing || !url || !key}>{testing ? '확인 중…' : '연결 테스트'}</button>
-          <button className="btn" onClick={saveKeys}>키 저장</button>
-          {enabled && <button className="btn gold" onClick={manualSync}><IconRefresh size={13} />지금 동기화</button>}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button className="btn gold sm" onClick={manualSync}><IconRefresh size={13} />지금 동기화</button>
           <span className="helper">상태: {statusText}</span>
+          <button className="btn ghost sm" style={{ marginLeft: 'auto' }} onClick={logout}>로그아웃</button>
         </div>
-      </div>
-      <div className="helper" style={{ marginTop: 10 }}>
-        ※ 저장 방식은 <b>마지막 저장 우선(last-write-wins)</b>이에요. 같은 프로필을 두 기기에서 동시에 편집하면 나중 저장이 반영됩니다.
       </div>
     </Card>
   )
@@ -262,7 +219,7 @@ export default function Settings() {
       <CategorySection sectionKey="expense" />
       <PaymentsCard />
       <SyncCategoriesCard />
-      <SyncCard />
+      <AccountCard />
 
       <Card title="데이터 백업 / 복원" dot="#f2a98f">
         <p className="helper" style={{ marginTop: 0 }}>

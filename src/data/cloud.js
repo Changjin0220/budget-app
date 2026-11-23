@@ -19,6 +19,8 @@
 //      (두 기기/두 사람이 같은 URL·key 를 넣으면 서로 동기화됨)
 // ============================================================
 
+import { authHeaders } from './auth'
+
 const CFG_KEY = 'boobu-gagyebu:v1:syncConfig'
 
 export function loadSyncConfig() {
@@ -33,7 +35,7 @@ export function saveSyncConfig(cfg) {
 }
 
 export function cloudEnabled(cfg) {
-  return !!(cfg && cfg.enabled && cfg.url && cfg.key)
+  return !!(cfg && cfg.enabled && cfg.url && cfg.key && cfg.hid)
 }
 
 function base(cfg) {
@@ -44,8 +46,7 @@ async function req(cfg, path, opts = {}) {
   const res = await fetch(`${base(cfg)}/rest/v1/${path}`, {
     ...opts,
     headers: {
-      apikey: cfg.key,
-      Authorization: `Bearer ${cfg.key}`,
+      ...(await authHeaders(cfg)),
       'Content-Type': 'application/json',
       ...(opts.headers || {}),
     },
@@ -59,7 +60,7 @@ async function req(cfg, path, opts = {}) {
 
 // 특정 프로필 문서 로드 → { state, updatedAt(ms) } | null
 export async function cloudLoad(cfg, profile) {
-  const res = await req(cfg, `budgets?profile=eq.${encodeURIComponent(profile)}&select=data,updated_at`)
+  const res = await req(cfg, `budgets?household_id=eq.${cfg.hid}&profile=eq.${encodeURIComponent(profile)}&select=data,updated_at`)
   const rows = await res.json()
   if (!rows.length) return null
   return { state: rows[0].data, updatedAt: Date.parse(rows[0].updated_at) || 0 }
@@ -68,11 +69,12 @@ export async function cloudLoad(cfg, profile) {
 // 저장(업서트). updatedAt(ms) 전달 → 서버 열에 기록
 export async function cloudSave(cfg, profile, state, updatedAtMs) {
   const body = [{
+    household_id: cfg.hid,
     profile,
     data: state,
     updated_at: new Date(updatedAtMs || Date.now()).toISOString(),
   }]
-  await req(cfg, 'budgets?on_conflict=profile', {
+  await req(cfg, 'budgets?on_conflict=household_id,profile', {
     method: 'POST',
     headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify(body),

@@ -4,14 +4,15 @@
 // 문서 통째 덮어쓰기(last-write-wins)로 서로의 메모가 사라지지 않게 하려고.
 // ============================================================
 
+import { authHeaders } from './auth'
+
 function base(cfg) { return cfg.url.replace(/\/+$/, '') }
 
 async function req(cfg, path, opts = {}) {
   const res = await fetch(`${base(cfg)}/rest/v1/${path}`, {
     ...opts,
     headers: {
-      apikey: cfg.key,
-      Authorization: `Bearer ${cfg.key}`,
+      ...(await authHeaders(cfg)),
       'Content-Type': 'application/json',
       ...(opts.headers || {}),
     },

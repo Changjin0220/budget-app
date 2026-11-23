@@ -3,11 +3,13 @@
 // 시트의 Apps Script(docs/sheet-apps-script.gs)가 하루 한 번 넣어줌.
 // ============================================================
 
+import { authHeaders } from './auth'
+
 function base(cfg) { return cfg.url.replace(/\/+$/, '') }
 
 export async function portfolioLatest(cfg) {
   const res = await fetch(`${base(cfg)}/rest/v1/portfolio_snapshots?select=day,data,updated_at&order=day.desc&limit=1`, {
-    headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}` },
+    headers: await authHeaders(cfg),
   })
   if (!res.ok) {
     const txt = await res.text().catch(() => '')
