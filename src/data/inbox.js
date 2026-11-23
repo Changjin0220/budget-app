@@ -54,3 +54,27 @@ create policy "inbox insert" on inbox for insert with check (true);
 create policy "inbox read" on inbox for select using (true);
 create policy "inbox mark" on inbox for update using (true) with check (true);
 -- delete 정책은 만들지 않음: 앱·단축어 모두 문자를 지울 수 없음`
+
+// 문자 목록을 월간내역 행으로 추가 (mutate 안에서 호출). 이미 같은 문자로 만든 행이 있으면 건너뜀.
+// list: [{ id, parsed, major, minor, payment }]
+export function pushInboxRows(d, list, makeId) {
+  const seen = new Set()
+  for (let mo = 1; mo <= 12; mo++) for (const r of d.monthly[mo]?.rows || []) if (r.source) seen.add(r.source)
+  let added = 0
+  for (const x of list) {
+    const p = x.parsed
+    const source = `sms:${x.id}`
+    if (!p?.ok || seen.has(source) || !d.monthly[p.month]) continue
+    if (x.payment && !d.settings.payments.includes(x.payment)) d.settings.payments.push(x.payment)
+    const memo = [p.cancel ? '승인취소' : '', p.installment ? `${p.installment}개월 할부` : '', x.auto ? '문자자동반영' : '문자자동']
+      .filter(Boolean).join(' · ')
+    d.monthly[p.month].rows.push({
+      id: makeId(), day: p.day, kind: 'expense',
+      major: x.major, minor: x.minor,
+      amount: p.cancel ? -p.amount : p.amount,
+      payment: x.payment, detail: p.merchant, memo, source,
+    })
+    seen.add(source); added++
+  }
+  return added
+}
