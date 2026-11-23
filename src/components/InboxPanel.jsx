@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useApp } from '../data/store'
 import { cloudEnabled } from '../data/cloud'
-import { inboxFetch, inboxMark } from '../data/inbox'
+import { inboxFetch, inboxMark, pushInboxRows } from '../data/inbox'
+import { INBOX_CHANGED } from '../data/useInboxAutoApply'
 import { parseCardSms, matchPayment, buildCategoryHints } from '../data/smsParser'
 import { MajorSelect, MinorSelect } from './fields'
 import { Card } from './ui'
@@ -62,7 +63,8 @@ export default function InboxPanel() {
     if (!on) return
     const onFocus = () => load()
     window.addEventListener('focus', onFocus)
-    return () => window.removeEventListener('focus', onFocus)
+    window.addEventListener(INBOX_CHANGED, onFocus)
+    return () => { window.removeEventListener('focus', onFocus); window.removeEventListener(INBOX_CHANGED, onFocus) }
   }, [load, on])
 
   if (!on || error === 'no-table' || (!items.length && !error)) return null
@@ -72,21 +74,7 @@ export default function InboxPanel() {
   const apply = async (list) => {
     const good = list.filter((x) => x.parsed.ok)
     if (!good.length) return
-    mutate((d) => {
-      for (const x of good) {
-        const p = x.parsed
-        if (x.payment && !d.settings.payments.includes(x.payment)) d.settings.payments.push(x.payment)
-        const memo = [p.cancel ? '승인취소' : '', p.installment ? `${p.installment}개월 할부` : '', '문자자동']
-          .filter(Boolean).join(' · ')
-        d.monthly[p.month].rows.push({
-          id: uid('mr'), day: p.day, kind: 'expense',
-          major: x.major, minor: x.minor,
-          amount: p.cancel ? -p.amount : p.amount,
-          payment: x.payment, detail: p.merchant, memo,
-          source: `sms:${x.id}`,
-        })
-      }
-    })
+    mutate((d) => { pushInboxRows(d, good, () => uid('mr')) })
     try {
       await inboxMark(syncConfig, good.map((x) => x.id), 'done')
       setItems((xs) => xs.filter((x) => !good.some((g) => g.id === x.id)))

@@ -108,6 +108,8 @@ export function buildCategoryHints(monthly) {
   }
   return {
     get: (merchant) => pick(exact.get(normMerchant(merchant))) || pick(loose.get(looseMerchant(merchant))),
+    // 가맹점 이름이 정확히 같은 기록만 (자동 반영용)
+    exact: (merchant) => pick(exact.get(normMerchant(merchant))),
   }
 }
 

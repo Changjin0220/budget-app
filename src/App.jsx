@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useApp } from './data/store'
+import { useInboxAutoApply } from './data/useInboxAutoApply'
 import { ALL_PROFILES, PROFILES } from './data/defaults'
 import ProfileGate from './components/ProfileGate'
 import Calendar from './views/Calendar'
@@ -50,6 +51,7 @@ export default function App() {
   const { profile, isCommon, state, setProfile } = useApp()
   const [view, setView] = useState('calendar')
   const [menuOpen, setMenuOpen] = useState(false)
+  useInboxAutoApply()
 
   if (!profile || !state) return <ProfileGate />
 
